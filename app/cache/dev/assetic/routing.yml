@@ -1,0 +1,5 @@
+_assetic:
+    resource: .
+    type: assetic
+_app:
+    resource: 'C:/coding/Projects/IW7-TOP100/app/config/routing_dev.yml'
