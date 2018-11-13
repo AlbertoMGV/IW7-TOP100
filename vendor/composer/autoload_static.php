@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b
+class ComposerStaticInit67bb65ff2d92dfb16e184e0e29cbed7e
 {
     public static $files = array (
         '92c8763cd6170fce6fcfe7e26b4e8c10' => __DIR__ . '/..' . '/symfony/phpunit-bridge/bootstrap.php',
@@ -45,6 +45,7 @@ class ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b
             'Sensio\\Bundle\\GeneratorBundle\\' => 30,
             'Sensio\\Bundle\\FrameworkExtraBundle\\' => 35,
             'Sensio\\Bundle\\DistributionBundle\\' => 33,
+            'SensioLabs\\Security\\' => 20,
         ),
         'P' => 
         array (
@@ -166,6 +167,10 @@ class ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b
         array (
             0 => __DIR__ . '/..' . '/sensio/distribution-bundle',
         ),
+        'SensioLabs\\Security\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/sensiolabs/security-checker/SensioLabs/Security',
+        ),
         'Psr\\SimpleCache\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/simple-cache/src',
@@ -240,13 +245,6 @@ class ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b
                 0 => __DIR__ . '/..' . '/twig/twig/lib',
             ),
         ),
-        'S' => 
-        array (
-            'SensioLabs\\Security' => 
-            array (
-                0 => __DIR__ . '/..' . '/sensiolabs/security-checker',
-            ),
-        ),
         'D' => 
         array (
             'Doctrine\\ORM\\' => 
@@ -292,10 +290,10 @@ class ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInitfcb7b995e7376401c0835fb3a4de534b::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit67bb65ff2d92dfb16e184e0e29cbed7e::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit67bb65ff2d92dfb16e184e0e29cbed7e::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit67bb65ff2d92dfb16e184e0e29cbed7e::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit67bb65ff2d92dfb16e184e0e29cbed7e::$classMap;
 
         }, null, ClassLoader::class);
     }
