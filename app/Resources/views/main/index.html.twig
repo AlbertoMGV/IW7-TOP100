@@ -2,11 +2,39 @@
 
 {% block body %}
 
-
-
-    <H1>Hola</H1>
-
-
+	<div class="title"></div>
+	
+	<table align="center" cellpadding="10">
+		<tr>
+			<td>
+				<div class="card">
+					<img src="{{ asset('songs.jpg') }}" alt="Avatar" style="width:100%" >
+					<div class="container">
+						<h4><b>Songs</b></h4> 
+						<p>List Of Songs</p> 
+					</div>
+				</div>
+			</td>
+			<td>
+				<div class="card">
+					<img src="{{ asset('artists.jpg') }}" alt="Avatar" style="width:100%">
+					<div class="container">
+						<h4><b>Artists</b></h4> 
+						<p>List Of Artists</p> 
+					</div>
+				</div>
+			</td>
+			<td>
+				<div class="card">
+					<img src="{{ asset('genres.jpg') }}" alt="Avatar" style="width:100%">
+					<div class="container">
+						<h4><b>Genres</b></h4> 
+						<p>List Of Genres</p> 
+					</div>
+				</div>
+			</td>			
+		</tr>
+	</table>
 
 
 {% endblock %}

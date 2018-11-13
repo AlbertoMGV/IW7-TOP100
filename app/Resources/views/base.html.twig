@@ -5,7 +5,7 @@
         <title>{% block title %}IW7-TOP100{% endblock %}</title>
         {% block stylesheets %}{% endblock %}
         <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
-        <link rel="stylesheet" type="text/css" href="css/main.css">
+        <link rel="stylesheet" href="{{ asset('main.css') }}" />
         <link href='http://fonts.googleapis.com/css?family=Cookie' rel='stylesheet' type='text/css'>
     </head>
     <body>
@@ -15,13 +15,13 @@
 
             <div class="header-limiter">
 
-                <h1><a href="#">Company<span>logo</span></a></h1>
+                <h1><a href="/">TOP<span>100</span></a></h1>
 
                 <nav>
-                    <a href="#">Home</a>
-                    <a href="#" class="selected">Blog</a>
-                    <a href="#">Pricing</a>
-                    <a href="#">Contact</a>
+                    <a href="/">Home</a>
+                    <a href="/songs">Songs</a>
+                    <a href="/artists">Artists</a>
+                    <a href="/genres">Genres</a>
                 </nav>
 
                 <form method="get" action="#">
@@ -31,7 +31,8 @@
             </div>
 
         </header>
-
+        </br>
+        </br>
         
         <script>
 
@@ -50,12 +51,21 @@
             });
 
         </script>
+        <!--Here goes the body <3 -->
 
-
+        <div class="card_body">
+        </br>
+        </br>
+            {% block body %}{% endblock %}
+        </br>
+        </br>
+        </div>
 
         
+
+
         <!---->
-        {% block body %}{% endblock %}
+
         {% block javascripts %}{% endblock %}
     </body>
 </html>
