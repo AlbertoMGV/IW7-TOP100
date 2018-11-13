@@ -12,15 +12,15 @@
 namespace Symfony\Component\Form\Extension\Core\Type;
 
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\FormInterface;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\DataTransformer\MoneyToLocalizedStringTransformer;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class MoneyType extends AbstractType
 {
-    private static $patterns = array();
+    protected static $patterns = array();
 
     /**
      * {@inheritdoc}
@@ -29,7 +29,7 @@ class MoneyType extends AbstractType
     {
         $builder
             ->addViewTransformer(new MoneyToLocalizedStringTransformer(
-                $options['precision'],
+                $options['scale'],
                 $options['grouping'],
                 null,
                 $options['divisor']
@@ -48,40 +48,34 @@ class MoneyType extends AbstractType
     /**
      * {@inheritdoc}
      */
-    public function setDefaultOptions(OptionsResolverInterface $resolver)
+    public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults(array(
-            'precision' => 2,
-            'grouping'  => false,
-            'divisor'   => 1,
-            'currency'  => 'EUR',
-            'compound'  => false,
+            'scale' => 2,
+            'grouping' => false,
+            'divisor' => 1,
+            'currency' => 'EUR',
+            'compound' => false,
         ));
+
+        $resolver->setAllowedTypes('scale', 'int');
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getParent()
-    {
-        return 'field';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
+    public function getBlockPrefix()
     {
         return 'money';
     }
 
     /**
-     * Returns the pattern for this locale
+     * Returns the pattern for this locale in UTF-8.
      *
      * The pattern contains the placeholder "{{ widget }}" where the HTML tag should
      * be inserted
      */
-    private static function getPattern($currency)
+    protected static function getPattern($currency)
     {
         if (!$currency) {
             return '{{ widget }}';

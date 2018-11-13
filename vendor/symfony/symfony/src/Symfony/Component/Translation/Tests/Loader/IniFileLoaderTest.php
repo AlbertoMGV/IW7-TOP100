@@ -11,18 +11,12 @@
 
 namespace Symfony\Component\Translation\Tests\Loader;
 
-use Symfony\Component\Translation\Loader\IniFileLoader;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\Translation\Loader\IniFileLoader;
 
-class IniFileLoaderTest extends \PHPUnit_Framework_TestCase
+class IniFileLoaderTest extends TestCase
 {
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Component\Config\Loader\Loader')) {
-            $this->markTestSkipped('The "Config" component is not available');
-        }
-    }
-
     public function testLoad()
     {
         $loader = new IniFileLoader();
@@ -46,12 +40,12 @@ class IniFileLoaderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \Symfony\Component\Translation\Exception\NotFoundResourceException
      */
-    public function testLoadThrowsAnExceptionIfFileNotExists()
+    public function testLoadNonExistingResource()
     {
         $loader = new IniFileLoader();
-        $resource = __DIR__.'/../fixtures/not-exists.ini';
+        $resource = __DIR__.'/../fixtures/non-existing.ini';
         $loader->load($resource, 'en', 'domain1');
     }
 }

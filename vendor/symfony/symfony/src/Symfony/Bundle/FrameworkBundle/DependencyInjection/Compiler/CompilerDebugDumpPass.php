@@ -11,17 +11,30 @@
 
 namespace Symfony\Bundle\FrameworkBundle\DependencyInjection\Compiler;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Config\ConfigCache;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+@trigger_error(sprintf('The %s class is deprecated since Symfony 3.3 and will be removed in 4.0.', CompilerDebugDumpPass::class), E_USER_DEPRECATED);
 
+use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Filesystem\Filesystem;
+
+/**
+ * @deprecated since version 3.3, to be removed in 4.0.
+ */
 class CompilerDebugDumpPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container)
     {
-        $cache = new ConfigCache($this->getCompilerLogFilename($container), false);
-        $cache->write(implode("\n", $container->getCompiler()->getLog()));
+        $filename = self::getCompilerLogFilename($container);
+
+        $filesystem = new Filesystem();
+        $filesystem->dumpFile($filename, implode("\n", $container->getCompiler()->getLog()), null);
+        try {
+            $filesystem->chmod($filename, 0666, umask());
+        } catch (IOException $e) {
+            // discard chmod failure (some filesystem may not support it)
+        }
     }
 
     public static function getCompilerLogFilename(ContainerInterface $container)

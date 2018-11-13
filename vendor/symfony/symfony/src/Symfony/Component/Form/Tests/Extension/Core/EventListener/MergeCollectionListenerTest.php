@@ -11,10 +11,11 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\EventListener;
 
-use Symfony\Component\Form\FormEvent;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\EventListener\MergeCollectionListener;
+use Symfony\Component\Form\FormEvent;
 
-abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
+abstract class MergeCollectionListenerTest extends TestCase
 {
     protected $dispatcher;
     protected $factory;
@@ -22,12 +23,8 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        if (!class_exists('Symfony\Component\EventDispatcher\EventDispatcher')) {
-            $this->markTestSkipped('The "EventDispatcher" component is not available');
-        }
-
-        $this->dispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
-        $this->factory = $this->getMock('Symfony\Component\Form\FormFactoryInterface');
+        $this->dispatcher = $this->getMockBuilder('Symfony\Component\EventDispatcher\EventDispatcherInterface')->getMock();
+        $this->factory = $this->getMockBuilder('Symfony\Component\Form\FormFactoryInterface')->getMock();
         $this->form = $this->getForm('axes');
     }
 
@@ -49,7 +46,7 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
 
     protected function getMockForm()
     {
-        return $this->getMock('Symfony\Component\Form\Tests\FormInterface');
+        return $this->getMockBuilder('Symfony\Component\Form\Test\FormInterface')->getMock();
     }
 
     public function getBooleanMatrix1()
@@ -85,10 +82,10 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         // The original object was modified
-        if (is_object($originalData)) {
+        if (\is_object($originalData)) {
             $this->assertSame($originalData, $event->getData());
         }
 
@@ -109,10 +106,10 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         // The original object was modified
-        if (is_object($originalData)) {
+        if (\is_object($originalData)) {
             $this->assertSame($originalData, $event->getData());
         }
 
@@ -134,10 +131,10 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         // We still have the original object
-        if (is_object($originalData)) {
+        if (\is_object($originalData)) {
             $this->assertSame($originalData, $event->getData());
         }
 
@@ -158,10 +155,10 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         // The original object was modified
-        if (is_object($originalData)) {
+        if (\is_object($originalData)) {
             $this->assertSame($originalData, $event->getData());
         }
 
@@ -183,10 +180,10 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         // We still have the original object
-        if (is_object($originalData)) {
+        if (\is_object($originalData)) {
             $this->assertSame($originalData, $event->getData());
         }
 
@@ -196,14 +193,14 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider getBooleanMatrix2
-     * @expectedException Symfony\Component\Form\Exception\UnexpectedTypeException
+     * @expectedException \Symfony\Component\Form\Exception\UnexpectedTypeException
      */
     public function testRequireArrayOrTraversable($allowAdd, $allowDelete)
     {
         $newData = 'no array or traversable';
         $event = new FormEvent($this->form, $newData);
         $listener = new MergeCollectionListener($allowAdd, $allowDelete);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
     }
 
     public function testDealWithNullData()
@@ -216,7 +213,7 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         $this->assertSame($originalData, $event->getData());
     }
@@ -234,7 +231,7 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         $this->assertSame($newData, $event->getData());
     }
@@ -252,7 +249,7 @@ abstract class MergeCollectionListenerTest extends \PHPUnit_Framework_TestCase
         $this->form->setData($originalData);
 
         $event = new FormEvent($this->form, $newData);
-        $listener->onBind($event);
+        $listener->onSubmit($event);
 
         $this->assertNull($event->getData());
     }

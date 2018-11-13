@@ -11,26 +11,30 @@
 
 namespace Symfony\Bundle\SecurityBundle\EventListener;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
+@trigger_error(sprintf('Class "%s" is deprecated since Symfony 3.4 and will be removed in 4.0. Use Symfony\Bundle\AclBundle\EventListener\AclSchemaListener instead.', AclSchemaListener::class), E_USER_DEPRECATED);
+
 use Doctrine\ORM\Tools\Event\GenerateSchemaEventArgs;
+use Symfony\Component\Security\Acl\Dbal\Schema;
 
 /**
  * Merges ACL schema into the given schema.
  *
  * @author Johannes M. Schmitt <schmittjoh@gmail.com>
+ *
+ * @deprecated since 3.4, to be removed in 4.0
  */
 class AclSchemaListener
 {
-    private $container;
+    private $schema;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(Schema $schema)
     {
-        $this->container = $container;
+        $this->schema = $schema;
     }
 
     public function postGenerateSchema(GenerateSchemaEventArgs $args)
     {
         $schema = $args->getSchema();
-        $this->container->get('security.acl.dbal.schema')->addToSchema($schema);
+        $this->schema->addToSchema($schema);
     }
 }

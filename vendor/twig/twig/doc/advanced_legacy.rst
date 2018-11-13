@@ -244,14 +244,14 @@ Automatic Escaping
 ~~~~~~~~~~~~~~~~~~
 
 If automatic escaping is enabled, the output of the filter may be escaped
-before printing. If your filter acts as an escaper (or explicitly outputs html
-or javascript code), you will want the raw output to be printed. In such a
+before printing. If your filter acts as an escaper (or explicitly outputs HTML
+or JavaScript code), you will want the raw output to be printed. In such a
 case, set the ``is_safe`` option::
 
     $filter = new Twig_Filter_Function('nl2br', array('is_safe' => array('html')));
 
 Some filters may need to work on input that is already escaped or safe, for
-example when adding (safe) html tags to originally unsafe output. In such a
+example when adding (safe) HTML tags to originally unsafe output. In such a
 case, set the ``pre_escape`` option to escape the input data before it is run
 through your filter::
 
@@ -266,7 +266,7 @@ Dynamic Filters
 A filter name containing the special ``*`` character is a dynamic filter as
 the ``*`` can be any string::
 
-    $twig->addFilter('*_path', new Twig_Filter_Function('twig_path'));
+    $twig->addFilter('*_path_*', new Twig_Filter_Function('twig_path'));
 
     function twig_path($name, $arguments)
     {
@@ -529,7 +529,7 @@ to host all the specific tags and filters you want to add to Twig.
 .. note::
 
     Before writing your own extensions, have a look at the Twig official
-    extension repository: http://github.com/fabpot/Twig-extensions.
+    extension repository: https://github.com/twigphp/Twig-extensions.
 
 An extension is a class that implements the following interface::
 
@@ -539,50 +539,48 @@ An extension is a class that implements the following interface::
          * Initializes the runtime environment.
          *
          * This is where you can load some file that contains filter functions for instance.
-         *
-         * @param Twig_Environment $environment The current Twig_Environment instance
          */
         function initRuntime(Twig_Environment $environment);
 
         /**
          * Returns the token parser instances to add to the existing list.
          *
-         * @return array An array of Twig_TokenParserInterface or Twig_TokenParserBrokerInterface instances
+         * @return (Twig_TokenParserInterface|Twig_TokenParserBrokerInterface)[]
          */
         function getTokenParsers();
 
         /**
          * Returns the node visitor instances to add to the existing list.
          *
-         * @return array An array of Twig_NodeVisitorInterface instances
+         * @return Twig_NodeVisitorInterface[]
          */
         function getNodeVisitors();
 
         /**
          * Returns a list of filters to add to the existing list.
          *
-         * @return array An array of filters
+         * @return Twig_SimpleFilter[]
          */
         function getFilters();
 
         /**
          * Returns a list of tests to add to the existing list.
          *
-         * @return array An array of tests
+         * @return Twig_SimpleTest[]
          */
         function getTests();
 
         /**
          * Returns a list of functions to add to the existing list.
          *
-         * @return array An array of functions
+         * @return Twig_SimpleFunction[]
          */
         function getFunctions();
 
         /**
          * Returns a list of operators to add to the existing list.
          *
-         * @return array An array of operators
+         * @return array<array> First array of unary operators, second array of binary operators
          */
         function getOperators();
 
@@ -881,7 +879,7 @@ Testing the node visitors can be complex, so extend your test cases from
 ``Twig_Test_NodeTestCase``. Examples can be found in the Twig repository
 `tests/Twig/Node`_ directory.
 
-.. _`spl_autoload_register()`: http://www.php.net/spl_autoload_register
-.. _`rot13`:                   http://www.php.net/manual/en/function.str-rot13.php
-.. _`tests/Twig/Fixtures`:     https://github.com/fabpot/Twig/tree/master/test/Twig/Tests/Fixtures
-.. _`tests/Twig/Node`:         https://github.com/fabpot/Twig/tree/master/test/Twig/Tests/Node
+.. _`spl_autoload_register()`: https://secure.php.net/spl_autoload_register
+.. _`rot13`:                   https://secure.php.net/manual/en/function.str-rot13.php
+.. _`tests/Twig/Fixtures`:     https://github.com/twigphp/Twig/tree/master/test/Twig/Tests/Fixtures
+.. _`tests/Twig/Node`:         https://github.com/twigphp/Twig/tree/master/test/Twig/Tests/Node

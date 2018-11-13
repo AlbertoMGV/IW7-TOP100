@@ -11,26 +11,28 @@
 
 namespace Symfony\Bundle\FrameworkBundle\Routing;
 
-use Symfony\Component\Routing\Router as BaseRouter;
-use Symfony\Component\Routing\RequestContext;
+use Symfony\Component\Config\Loader\LoaderInterface;
+use Symfony\Component\DependencyInjection\Config\ContainerParametersResource;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Routing\RouteCollection;
-use Symfony\Component\HttpKernel\CacheWarmer\WarmableInterface;
 use Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException;
 use Symfony\Component\DependencyInjection\Exception\RuntimeException;
+use Symfony\Component\DependencyInjection\ServiceSubscriberInterface;
+use Symfony\Component\HttpKernel\CacheWarmer\WarmableInterface;
+use Symfony\Component\Routing\RequestContext;
+use Symfony\Component\Routing\RouteCollection;
+use Symfony\Component\Routing\Router as BaseRouter;
 
 /**
  * This Router creates the Loader only when the cache is empty.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class Router extends BaseRouter implements WarmableInterface
+class Router extends BaseRouter implements WarmableInterface, ServiceSubscriberInterface
 {
     private $container;
+    private $collectedParameters = array();
 
     /**
-     * Constructor.
-     *
      * @param ContainerInterface $container A ContainerInterface instance
      * @param mixed              $resource  The main resource to load
      * @param array              $options   An array of options
@@ -41,7 +43,7 @@ class Router extends BaseRouter implements WarmableInterface
         $this->container = $container;
 
         $this->resource = $resource;
-        $this->context = null === $context ? new RequestContext() : $context;
+        $this->context = $context ?: new RequestContext();
         $this->setOptions($options);
     }
 
@@ -53,6 +55,7 @@ class Router extends BaseRouter implements WarmableInterface
         if (null === $this->collection) {
             $this->collection = $this->container->get('routing.loader')->load($this->resource, $this->options['resource_type']);
             $this->resolveParameters($this->collection);
+            $this->collection->addResource(new ContainerParametersResource($this->collectedParameters));
         }
 
         return $this->collection;
@@ -77,75 +80,98 @@ class Router extends BaseRouter implements WarmableInterface
      * Replaces placeholders with service container parameter values in:
      * - the route defaults,
      * - the route requirements,
-     * - the route pattern.
-     *
-     * @param RouteCollection $collection
+     * - the route path,
+     * - the route host,
+     * - the route schemes,
+     * - the route methods.
      */
     private function resolveParameters(RouteCollection $collection)
     {
         foreach ($collection as $route) {
-            if ($route instanceof RouteCollection) {
-                $this->resolveParameters($route);
-            } else {
-                foreach ($route->getDefaults() as $name => $value) {
-                    $route->setDefault($name, $this->resolveString($value));
-                }
-
-                foreach ($route->getRequirements() as $name => $value) {
-                     $route->setRequirement($name, $this->resolveString($value));
-                }
-                $collection->setPrefix('/'.ltrim($this->resolveString($collection->getPrefix()), '/'));
-                $route->setPattern($this->resolveString($route->getPattern()));
+            foreach ($route->getDefaults() as $name => $value) {
+                $route->setDefault($name, $this->resolve($value));
             }
+
+            foreach ($route->getRequirements() as $name => $value) {
+                $route->setRequirement($name, $this->resolve($value));
+            }
+
+            $route->setPath($this->resolve($route->getPath()));
+            $route->setHost($this->resolve($route->getHost()));
+
+            $schemes = array();
+            foreach ($route->getSchemes() as $scheme) {
+                $schemes = array_merge($schemes, explode('|', $this->resolve($scheme)));
+            }
+            $route->setSchemes($schemes);
+
+            $methods = array();
+            foreach ($route->getMethods() as $method) {
+                $methods = array_merge($methods, explode('|', $this->resolve($method)));
+            }
+            $route->setMethods($methods);
+            $route->setCondition($this->resolve($route->getCondition()));
         }
     }
 
     /**
-     * Replaces placeholders with the service container parameters in the given string.
+     * Recursively replaces placeholders with the service container parameters.
      *
-     * @param mixed $value The source string which might contain %placeholders%
+     * @param mixed $value The source which might contain "%placeholders%"
      *
-     * @return mixed A string where the placeholders have been replaced, or the original value if not a string.
+     * @return mixed The source with the placeholders replaced by the container
+     *               parameters. Arrays are resolved recursively.
      *
      * @throws ParameterNotFoundException When a placeholder does not exist as a container parameter
      * @throws RuntimeException           When a container value is not a string or a numeric value
      */
-    private function resolveString($value)
+    private function resolve($value)
     {
-        $container = $this->container;
+        if (\is_array($value)) {
+            foreach ($value as $key => $val) {
+                $value[$key] = $this->resolve($val);
+            }
 
-        if (null === $value || false === $value || true === $value || is_object($value) || is_array($value)) {
             return $value;
         }
 
-        $escapedValue = preg_replace_callback('/%%|%([^%\s]+)%/', function ($match) use ($container, $value) {
+        if (!\is_string($value)) {
+            return $value;
+        }
+
+        $container = $this->container;
+
+        $escapedValue = preg_replace_callback('/%%|%([^%\s]++)%/', function ($match) use ($container, $value) {
             // skip %%
             if (!isset($match[1])) {
                 return '%%';
             }
 
-            $key = strtolower($match[1]);
-
-            if (!$container->hasParameter($key)) {
-                throw new ParameterNotFoundException($key);
+            if (preg_match('/^env\(\w+\)$/', $match[1])) {
+                throw new RuntimeException(sprintf('Using "%%%s%%" is not allowed in routing configuration.', $match[1]));
             }
 
-            $resolved = $container->getParameter($key);
+            $resolved = $container->getParameter($match[1]);
 
-            if (is_string($resolved) || is_numeric($resolved)) {
+            if (\is_string($resolved) || is_numeric($resolved)) {
+                $this->collectedParameters[$match[1]] = $resolved;
+
                 return (string) $resolved;
             }
 
-            throw new RuntimeException(sprintf(
-                'A string value must be composed of strings and/or numbers,' .
-                'but found parameter "%s" of type %s inside string value "%s".',
-                $key,
-                gettype($resolved),
-                $value)
-            );
-
+            throw new RuntimeException(sprintf('The container parameter "%s", used in the route configuration value "%s", must be a string or numeric, but it is of type %s.', $match[1], $value, \gettype($resolved)));
         }, $value);
 
         return str_replace('%%', '%', $escapedValue);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function getSubscribedServices()
+    {
+        return array(
+            'routing.loader' => LoaderInterface::class,
+        );
     }
 }

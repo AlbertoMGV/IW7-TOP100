@@ -26,11 +26,6 @@ class ProxyCacheWarmer implements CacheWarmerInterface
 {
     private $registry;
 
-    /**
-     * Constructor.
-     *
-     * @param ManagerRegistry $registry A ManagerRegistry instance
-     */
     public function __construct(ManagerRegistry $registry)
     {
         $this->registry = $registry;
@@ -46,6 +41,9 @@ class ProxyCacheWarmer implements CacheWarmerInterface
         return false;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function warmUp($cacheDir)
     {
         foreach ($this->registry->getManagers() as $em) {

@@ -11,8 +11,8 @@
 
 namespace Symfony\Bundle\FrameworkBundle\Templating;
 
-use Symfony\Component\Templating\EngineInterface as BaseEngineInterface;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Templating\EngineInterface as BaseEngineInterface;
 
 /**
  * EngineInterface is the interface each engine must implement.
@@ -29,6 +29,8 @@ interface EngineInterface extends BaseEngineInterface
      * @param Response $response   A Response instance
      *
      * @return Response A Response instance
+     *
+     * @throws \RuntimeException if the template cannot be rendered
      */
     public function renderResponse($view, array $parameters = array(), Response $response = null);
 }

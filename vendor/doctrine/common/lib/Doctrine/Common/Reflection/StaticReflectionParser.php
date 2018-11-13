@@ -19,8 +19,8 @@
 
 namespace Doctrine\Common\Reflection;
 
-use ReflectionException;
 use Doctrine\Common\Annotations\TokenParser;
+use ReflectionException;
 
 /**
  * Parses a file for namespaces/use/class declarations.
@@ -29,52 +29,58 @@ use Doctrine\Common\Annotations\TokenParser;
  */
 class StaticReflectionParser implements ReflectionProviderInterface
 {
-
     /**
-     * The name of the class.
+     * The fully qualified class name.
      *
      * @var string
      */
     protected $className;
 
     /**
-     * TRUE if the caller only wants class annotations.
+     * The short class name.
+     *
+     * @var string
+     */
+    protected $shortClassName;
+
+    /**
+     * Whether the caller only wants class annotations.
      *
      * @var boolean.
      */
     protected $classAnnotationOptimize;
 
     /**
-     * TRUE when the parser has ran.
+     * Whether the parser has run.
      *
      * @var boolean
      */
     protected $parsed = false;
 
     /**
-     * The namespace of the class
+     * The namespace of the class.
      *
      * @var string
      */
     protected $namespace = '';
 
     /**
-     * The use statements of this class.
+     * The use statements of the class.
      *
      * @var array
      */
-    protected $useStatements = array();
+    protected $useStatements = [];
 
     /**
      * The docComment of the class.
      *
      * @var string
      */
-    protected $docComment = array(
+    protected $docComment = [
         'class' => '',
-        'property' => array(),
-        'method' => array(),
-    );
+        'property' => [],
+        'method' => []
+    ];
 
     /**
      * The name of the class this class extends, if any.
@@ -86,31 +92,37 @@ class StaticReflectionParser implements ReflectionProviderInterface
     /**
      * The parent PSR-0 Parser.
      *
-     * @var \Doctrine\Common\Annotations\StaticReflectionParser
+     * @var \Doctrine\Common\Reflection\StaticReflectionParser
      */
     protected $parentStaticReflectionParser;
 
     /**
      * Parses a class residing in a PSR-0 hierarchy.
      *
-     * @param string $class
-     *     The full, namespaced class name.
-     * @param ClassFinder $finder
-     *     A ClassFinder object which finds the class.
-     * @param boolean $classAnnotationOptimize
-     *     Only retrieve the class docComment. Presumes there is only one
-     *     statement per line.
+     * @param string               $className               The full, namespaced class name.
+     * @param ClassFinderInterface $finder                  A ClassFinder object which finds the class.
+     * @param boolean              $classAnnotationOptimize Only retrieve the class docComment.
+     *                                                      Presumes there is only one statement per line.
      */
     public function __construct($className, $finder, $classAnnotationOptimize = false)
     {
         $this->className = ltrim($className, '\\');
-        if ($lastNsPos = strrpos($this->className, '\\')) {
+        $lastNsPos = strrpos($this->className, '\\');
+
+        if ($lastNsPos !== false) {
             $this->namespace = substr($this->className, 0, $lastNsPos);
+            $this->shortClassName = substr($this->className, $lastNsPos + 1);
+        } else {
+            $this->shortClassName = $this->className;
         }
+
         $this->finder = $finder;
         $this->classAnnotationOptimize = $classAnnotationOptimize;
     }
 
+    /**
+     * @return void
+     */
     protected function parse()
     {
         if ($this->parsed || !$fileName = $this->finder->findFile($this->className)) {
@@ -119,79 +131,84 @@ class StaticReflectionParser implements ReflectionProviderInterface
         $this->parsed = true;
         $contents = file_get_contents($fileName);
         if ($this->classAnnotationOptimize) {
-            if (preg_match("/(\A.*)^\s+(abstract|final)?\s+class\s+$className\s+{/sm", $contents, $matches)) {
-                $contents = $matches[1];
+            if (preg_match("/\A.*^\s*((abstract|final)\s+)?class\s+{$this->shortClassName}\s+/sm", $contents, $matches)) {
+                $contents = $matches[0];
             }
         }
         $tokenParser = new TokenParser($contents);
         $docComment = '';
+        $last_token = false;
+
         while ($token = $tokenParser->next(false)) {
-            if (is_array($token)) {
-                switch ($token[0]) {
-                    case T_USE:
-                        $this->useStatements = array_merge($this->useStatements, $tokenParser->parseUseStatement());
-                        break;
-                    case T_DOC_COMMENT:
-                        $docComment = $token[1];
-                        break;
-                    case T_CLASS:
-                        $this->docComment['class'] = $docComment;
-                        $docComment = '';
-                        break;
-                    case T_VAR:
-                    case T_PRIVATE:
-                    case T_PROTECTED:
-                    case T_PUBLIC:
-                        $token = $tokenParser->next();
-                        if ($token[0] === T_VARIABLE) {
-                            $propertyName = substr($token[1], 1);
-                            $this->docComment['property'][$propertyName] = $docComment;
-                            continue 2;
-                        }
-                        if ($token[0] !== T_FUNCTION) {
-                            // For example, it can be T_FINAL.
-                            continue 2;
-                        }
-                        // No break.
-                    case T_FUNCTION:
-                        // The next string after function is the name, but
-                        // there can be & before the function name so find the
-                        // string.
-                        while (($token = $tokenParser->next()) && $token[0] !== T_STRING);
-                        $methodName = $token[1];
-                        $this->docComment['method'][$methodName] = $docComment;
-                        $docComment = '';
-                        break;
-                    case T_EXTENDS:
-                        $this->parentClassName = $tokenParser->parseClass();
-                        $nsPos = strpos($this->parentClassName, '\\');
-                        $fullySpecified = false;
-                        if ($nsPos === 0) {
-                            $fullySpecified = true;
+            if (is_array($token)) {switch ($token[0]) {
+                case T_USE:
+                    $this->useStatements = array_merge($this->useStatements, $tokenParser->parseUseStatement());
+                    break;
+                case T_DOC_COMMENT:
+                    $docComment = $token[1];
+                    break;
+                case T_CLASS:
+                    if ($last_token !== T_PAAMAYIM_NEKUDOTAYIM) {$this->docComment['class'] = $docComment;
+                    $docComment = '';}
+                    break;
+                case T_VAR:
+                case T_PRIVATE:
+                case T_PROTECTED:
+                case T_PUBLIC:
+                    $token = $tokenParser->next();
+                    if ($token[0] === T_VARIABLE) {
+                        $propertyName = substr($token[1], 1);
+                        $this->docComment['property'][$propertyName] = $docComment;
+                        continue 2;
+                    }
+                    if ($token[0] !== T_FUNCTION) {
+                        // For example, it can be T_FINAL.
+                        continue 2;
+                    }
+                    // No break.
+                case T_FUNCTION:
+                    // The next string after function is the name, but
+                    // there can be & before the function name so find the
+                    // string.
+                    while (($token = $tokenParser->next()) && $token[0] !== T_STRING);
+                    $methodName = $token[1];
+                    $this->docComment['method'][$methodName] = $docComment;
+                    $docComment = '';
+                    break;
+                case T_EXTENDS:
+                    $this->parentClassName = $tokenParser->parseClass();
+                    $nsPos = strpos($this->parentClassName, '\\');
+                    $fullySpecified = false;
+                    if ($nsPos === 0) {
+                        $fullySpecified = true;
+                    } else {
+                        if ($nsPos) {
+                            $prefix = strtolower(substr($this->parentClassName, 0, $nsPos));
+                            $postfix = substr($this->parentClassName, $nsPos);
                         } else {
-                            if ($nsPos) {
-                                $prefix = strtolower(substr($this->parentClassName, 0, $nsPos));
-                                $postfix = substr($this->parentClassName, $nsPos);
-                            } else {
-                                $prefix = strtolower($this->parentClassName);
-                                $postfix = '';
-                            }
-                            foreach ($this->useStatements as $alias => $use) {
-                                if ($alias == $prefix) {
-                                    $this->parentClassName = '\\' . $use . $postfix;
-                                    $fullySpecified = true;
-                              }
-                            }
+                            $prefix = strtolower($this->parentClassName);
+                            $postfix = '';
                         }
-                        if (!$fullySpecified) {
-                            $this->parentClassName = '\\' . $this->namespace . '\\' . $this->parentClassName;
+                        foreach ($this->useStatements as $alias => $use) {
+                            if ($alias == $prefix) {
+                                $this->parentClassName = '\\' . $use . $postfix;
+                                $fullySpecified = true;
+                          }
                         }
-                        break;
-                }
+                    }
+                    if (!$fullySpecified) {
+                        $this->parentClassName = '\\' . $this->namespace . '\\' . $this->parentClassName;
+                    }
+                    break;}
             }
+
+            $last_token = $token[0];
         }
     }
 
+    /**
+     * @return StaticReflectionParser
+     */
     protected function getParentStaticReflectionParser()
     {
         if (empty($this->parentStaticReflectionParser)) {
@@ -201,18 +218,24 @@ class StaticReflectionParser implements ReflectionProviderInterface
         return $this->parentStaticReflectionParser;
     }
 
+    /**
+     * @return string
+     */
     public function getClassName()
     {
         return $this->className;
     }
 
+    /**
+     * @return string
+     */
     public function getNamespaceName()
     {
         return $this->namespace;
     }
 
     /**
-     * Get the ReflectionClass equivalent for this file / class.
+     * {@inheritDoc}
      */
     public function getReflectionClass()
     {
@@ -220,7 +243,7 @@ class StaticReflectionParser implements ReflectionProviderInterface
     }
 
     /**
-     * Get the ReflectionMethod equivalent for the method of this file / class.
+     * {@inheritDoc}
      */
     public function getReflectionMethod($methodName)
     {
@@ -228,7 +251,7 @@ class StaticReflectionParser implements ReflectionProviderInterface
     }
 
     /**
-     * Get the ReflectionProperty equivalent for the method of this file / class.
+     * {@inheritDoc}
      */
     public function getReflectionProperty($propertyName)
     {
@@ -236,7 +259,9 @@ class StaticReflectionParser implements ReflectionProviderInterface
     }
 
     /**
-     * Get the use statements from this file.
+     * Gets the use statements from this file.
+     *
+     * @return array
      */
     public function getUseStatements()
     {
@@ -246,12 +271,12 @@ class StaticReflectionParser implements ReflectionProviderInterface
     }
 
     /**
-     * Get docComment.
+     * Gets the doc comment.
      *
-     * @param string $type class, property or method.
-     * @param string $name Name of the property or method, not needed for class.
+     * @param string $type The type: 'class', 'property' or 'method'.
+     * @param string $name The name of the property or method, not needed for 'class'.
      *
-     * @return string the doc comment or empty string if none.
+     * @return string The doc comment, empty string if none.
      */
     public function getDocComment($type = 'class', $name = '')
     {
@@ -261,12 +286,14 @@ class StaticReflectionParser implements ReflectionProviderInterface
     }
 
     /**
-     * Get the PSR-0 parser for the declaring class.
+     * Gets the PSR-0 parser for the declaring class.
      *
-     * @param string $type property or method.
-     * @param string $name Name of the property or method.
+     * @param string $type The type: 'property' or 'method'.
+     * @param string $name The name of the property or method.
      *
      * @return StaticReflectionParser A static reflection parser for the declaring class.
+     *
+     * @throws ReflectionException
      */
     public function getStaticReflectionParserForDeclaringClass($type, $name)
     {

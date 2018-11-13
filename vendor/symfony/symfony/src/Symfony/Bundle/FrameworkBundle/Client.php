@@ -11,12 +11,14 @@
 
 namespace Symfony\Bundle\FrameworkBundle;
 
+use Symfony\Component\BrowserKit\CookieJar;
+use Symfony\Component\BrowserKit\History;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\HttpKernel\Client as BaseClient;
-use Symfony\Component\HttpKernel\Profiler\Profile as HttpProfile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Client as BaseClient;
+use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\HttpKernel\Profiler\Profile as HttpProfile;
 
 /**
  * Client simulates a browser and makes requests to a Kernel object.
@@ -26,11 +28,21 @@ use Symfony\Component\HttpFoundation\Response;
 class Client extends BaseClient
 {
     private $hasPerformedRequest = false;
+    private $profiler = false;
+    private $reboot = true;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function __construct(KernelInterface $kernel, array $server = array(), History $history = null, CookieJar $cookieJar = null)
+    {
+        parent::__construct($kernel, $server, $history, $cookieJar);
+    }
 
     /**
      * Returns the container.
      *
-     * @return ContainerInterface
+     * @return ContainerInterface|null Returns null when the Kernel has been shutdown or not started yet
      */
     public function getContainer()
     {
@@ -40,7 +52,7 @@ class Client extends BaseClient
     /**
      * Returns the kernel.
      *
-     * @return HttpKernelInterface
+     * @return KernelInterface
      */
     public function getKernel()
     {
@@ -50,7 +62,7 @@ class Client extends BaseClient
     /**
      * Gets the profile associated with the current Response.
      *
-     * @return HttpProfile A Profile instance
+     * @return HttpProfile|false A Profile instance
      */
     public function getProfile()
     {
@@ -62,7 +74,38 @@ class Client extends BaseClient
     }
 
     /**
-     * Makes a request.
+     * Enables the profiler for the very next request.
+     *
+     * If the profiler is not enabled, the call to this method does nothing.
+     */
+    public function enableProfiler()
+    {
+        if ($this->kernel->getContainer()->has('profiler')) {
+            $this->profiler = true;
+        }
+    }
+
+    /**
+     * Disables kernel reboot between requests.
+     *
+     * By default, the Client reboots the Kernel for each request. This method
+     * allows to keep the same kernel across requests.
+     */
+    public function disableReboot()
+    {
+        $this->reboot = false;
+    }
+
+    /**
+     * Enables kernel reboot between requests.
+     */
+    public function enableReboot()
+    {
+        $this->reboot = true;
+    }
+
+    /**
+     * {@inheritdoc}
      *
      * @param Request $request A Request instance
      *
@@ -72,13 +115,36 @@ class Client extends BaseClient
     {
         // avoid shutting down the Kernel if no request has been performed yet
         // WebTestCase::createClient() boots the Kernel but do not handle a request
-        if ($this->hasPerformedRequest) {
+        if ($this->hasPerformedRequest && $this->reboot) {
             $this->kernel->shutdown();
         } else {
             $this->hasPerformedRequest = true;
         }
 
+        if ($this->profiler) {
+            $this->profiler = false;
+
+            $this->kernel->boot();
+            $this->kernel->getContainer()->get('profiler')->enable();
+        }
+
         return parent::doRequest($request);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param Request $request A Request instance
+     *
+     * @return Response A Response instance
+     */
+    protected function doRequestInProcess($request)
+    {
+        $response = parent::doRequestInProcess($request);
+
+        $this->profiler = false;
+
+        return $response;
     }
 
     /**
@@ -95,31 +161,46 @@ class Client extends BaseClient
      */
     protected function getScript($request)
     {
-        $kernel = str_replace("'", "\\'", serialize($this->kernel));
-        $request = str_replace("'", "\\'", serialize($request));
+        $kernel = var_export(serialize($this->kernel), true);
+        $request = var_export(serialize($request), true);
+        $errorReporting = error_reporting();
 
-        $r = new \ReflectionObject($this->kernel);
-
-        $autoloader = dirname($r->getFileName()).'/autoload.php';
-        if (is_file($autoloader)) {
-            $autoloader = str_replace("'", "\\'", $autoloader);
-        } else {
-            $autoloader = '';
+        $requires = '';
+        foreach (get_declared_classes() as $class) {
+            if (0 === strpos($class, 'ComposerAutoloaderInit')) {
+                $r = new \ReflectionClass($class);
+                $file = \dirname(\dirname($r->getFileName())).'/autoload.php';
+                if (file_exists($file)) {
+                    $requires .= 'require_once '.var_export($file, true).";\n";
+                }
+            }
         }
 
-        $path = str_replace("'", "\\'", $r->getFileName());
+        if (!$requires) {
+            throw new \RuntimeException('Composer autoloader not found.');
+        }
 
-        return <<<EOF
+        $requires .= 'require_once '.var_export((new \ReflectionObject($this->kernel))->getFileName(), true).";\n";
+
+        $profilerCode = '';
+        if ($this->profiler) {
+            $profilerCode = '$kernel->getContainer()->get(\'profiler\')->enable();';
+        }
+
+        $code = <<<EOF
 <?php
 
-if ('$autoloader') {
-    require_once '$autoloader';
-}
-require_once '$path';
+error_reporting($errorReporting);
 
-\$kernel = unserialize('$kernel');
+$requires
+
+\$kernel = unserialize($kernel);
 \$kernel->boot();
-echo serialize(\$kernel->handle(unserialize('$request')));
+$profilerCode
+
+\$request = unserialize($request);
 EOF;
+
+        return $code.$this->getHandleScript();
     }
 }

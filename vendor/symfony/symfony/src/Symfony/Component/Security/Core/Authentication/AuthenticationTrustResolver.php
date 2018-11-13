@@ -24,8 +24,6 @@ class AuthenticationTrustResolver implements AuthenticationTrustResolverInterfac
     private $rememberMeClass;
 
     /**
-     * Constructor
-     *
      * @param string $anonymousClass
      * @param string $rememberMeClass
      */
@@ -36,7 +34,7 @@ class AuthenticationTrustResolver implements AuthenticationTrustResolverInterfac
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function isAnonymous(TokenInterface $token = null)
     {
@@ -48,7 +46,7 @@ class AuthenticationTrustResolver implements AuthenticationTrustResolverInterfac
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function isRememberMe(TokenInterface $token = null)
     {
@@ -60,7 +58,7 @@ class AuthenticationTrustResolver implements AuthenticationTrustResolverInterfac
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function isFullFledged(TokenInterface $token = null)
     {

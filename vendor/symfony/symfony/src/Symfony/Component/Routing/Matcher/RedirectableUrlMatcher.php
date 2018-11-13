@@ -16,8 +16,6 @@ use Symfony\Component\Routing\Route;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
- *
- * @api
  */
 abstract class RedirectableUrlMatcher extends UrlMatcher implements RedirectableUrlMatcherInterface
 {
@@ -29,14 +27,14 @@ abstract class RedirectableUrlMatcher extends UrlMatcher implements Redirectable
         try {
             $parameters = parent::match($pathinfo);
         } catch (ResourceNotFoundException $e) {
-            if ('/' === substr($pathinfo, -1) || !in_array($this->context->getMethod(), array('HEAD', 'GET'))) {
+            if ('/' === substr($pathinfo, -1) || !\in_array($this->context->getMethod(), array('HEAD', 'GET'))) {
                 throw $e;
             }
 
             try {
-                parent::match($pathinfo.'/');
+                $parameters = parent::match($pathinfo.'/');
 
-                return $this->redirect($pathinfo.'/', null);
+                return array_replace($parameters, $this->redirect($pathinfo.'/', isset($parameters['_route']) ? $parameters['_route'] : null));
             } catch (ResourceNotFoundException $e2) {
                 throw $e;
             }
@@ -46,14 +44,20 @@ abstract class RedirectableUrlMatcher extends UrlMatcher implements Redirectable
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     protected function handleRouteRequirements($pathinfo, $name, Route $route)
     {
+        // expression condition
+        if ($route->getCondition() && !$this->getExpressionLanguage()->evaluate($route->getCondition(), array('context' => $this->context, 'request' => $this->request ?: $this->createRequest($pathinfo)))) {
+            return array(self::REQUIREMENT_MISMATCH, null);
+        }
+
         // check HTTP scheme requirement
-        $scheme = $route->getRequirement('_scheme');
-        if ($scheme && $this->context->getScheme() !== $scheme) {
-            return array(self::ROUTE_MATCH, $this->redirect($pathinfo, $name, $scheme));
+        $scheme = $this->context->getScheme();
+        $schemes = $route->getSchemes();
+        if ($schemes && !$route->hasScheme($scheme)) {
+            return array(self::ROUTE_MATCH, $this->redirect($pathinfo, $name, current($schemes)));
         }
 
         return array(self::REQUIREMENT_MATCH, null);

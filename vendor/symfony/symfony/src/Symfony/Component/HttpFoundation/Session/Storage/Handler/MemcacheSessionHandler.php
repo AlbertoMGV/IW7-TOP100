@@ -11,25 +11,24 @@
 
 namespace Symfony\Component\HttpFoundation\Session\Storage\Handler;
 
+@trigger_error(sprintf('The class %s is deprecated since Symfony 3.4 and will be removed in 4.0. Use Symfony\Component\HttpFoundation\Session\Storage\Handler\MemcachedSessionHandler instead.', MemcacheSessionHandler::class), E_USER_DEPRECATED);
+
 /**
- * MemcacheSessionHandler.
- *
  * @author Drak <drak@zikula.org>
+ *
+ * @deprecated since version 3.4, to be removed in 4.0. Use Symfony\Component\HttpFoundation\Session\Storage\Handler\MemcachedSessionHandler instead.
  */
 class MemcacheSessionHandler implements \SessionHandlerInterface
 {
-    /**
-     * @var \Memcache Memcache driver.
-     */
     private $memcache;
 
     /**
-     * @var integer Time to live in seconds
+     * @var int Time to live in seconds
      */
     private $ttl;
 
     /**
-     * @var string Key prefix for shared environments.
+     * @var string Key prefix for shared environments
      */
     private $prefix;
 
@@ -48,9 +47,7 @@ class MemcacheSessionHandler implements \SessionHandlerInterface
     public function __construct(\Memcache $memcache, array $options = array())
     {
         if ($diff = array_diff(array_keys($options), array('prefix', 'expiretime'))) {
-            throw new \InvalidArgumentException(sprintf(
-                'The following options are not supported "%s"', implode(', ', $diff)
-            ));
+            throw new \InvalidArgumentException(sprintf('The following options are not supported "%s"', implode(', ', $diff)));
         }
 
         $this->memcache = $memcache;
@@ -59,7 +56,7 @@ class MemcacheSessionHandler implements \SessionHandlerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function open($savePath, $sessionName)
     {
@@ -67,15 +64,15 @@ class MemcacheSessionHandler implements \SessionHandlerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function close()
     {
-        return $this->memcache->close();
+        return true;
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function read($sessionId)
     {
@@ -83,7 +80,7 @@ class MemcacheSessionHandler implements \SessionHandlerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function write($sessionId, $data)
     {
@@ -91,19 +88,31 @@ class MemcacheSessionHandler implements \SessionHandlerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function destroy($sessionId)
     {
-        return $this->memcache->delete($this->prefix.$sessionId);
+        $this->memcache->delete($this->prefix.$sessionId);
+
+        return true;
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
-    public function gc($lifetime)
+    public function gc($maxlifetime)
     {
         // not required here because memcache will auto expire the records anyhow.
         return true;
+    }
+
+    /**
+     * Return a Memcache instance.
+     *
+     * @return \Memcache
+     */
+    protected function getMemcache()
+    {
+        return $this->memcache;
     }
 }

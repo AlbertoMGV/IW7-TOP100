@@ -37,7 +37,7 @@ abstract class BasePasswordEncoder implements PasswordEncoderInterface
         $salt = '';
         $saltBegins = strrpos($mergedPasswordSalt, '{');
 
-        if (false !== $saltBegins && $saltBegins + 1 < strlen($mergedPasswordSalt)) {
+        if (false !== $saltBegins && $saltBegins + 1 < \strlen($mergedPasswordSalt)) {
             $salt = substr($mergedPasswordSalt, $saltBegins + 1, -1);
             $password = substr($mergedPasswordSalt, 0, $saltBegins);
         }
@@ -48,10 +48,12 @@ abstract class BasePasswordEncoder implements PasswordEncoderInterface
     /**
      * Merges a password and a salt.
      *
-     * @param string $password the password to be used
-     * @param string $salt     the salt to be used
+     * @param string $password The password to be used
+     * @param string $salt     The salt to be used
      *
      * @return string a merged password and salt
+     *
+     * @throws \InvalidArgumentException
      */
     protected function mergePasswordAndSalt($password, $salt)
     {
@@ -75,29 +77,22 @@ abstract class BasePasswordEncoder implements PasswordEncoderInterface
      * @param string $password1 The first password
      * @param string $password2 The second password
      *
-     * @return Boolean true if the two passwords are the same, false otherwise
+     * @return bool true if the two passwords are the same, false otherwise
      */
     protected function comparePasswords($password1, $password2)
     {
-        if (strlen($password1) !== strlen($password2)) {
-            return false;
-        }
-
-        $result = 0;
-        for ($i = 0; $i < strlen($password1); $i++) {
-            $result |= ord($password1[$i]) ^ ord($password2[$i]);
-        }
-
-        return 0 === $result;
+        return hash_equals($password1, $password2);
     }
 
     /**
      * Checks if the password is too long.
      *
-     * @return Boolean true if the password is too long, false otherwise
+     * @param string $password The password to check
+     *
+     * @return bool true if the password is too long, false otherwise
      */
     protected function isPasswordTooLong($password)
     {
-        return strlen($password) > self::MAX_PASSWORD_LENGTH;
+        return \strlen($password) > static::MAX_PASSWORD_LENGTH;
     }
 }

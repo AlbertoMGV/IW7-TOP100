@@ -11,23 +11,19 @@
 
 namespace Symfony\Bundle\FrameworkBundle\EventListener;
 
-use Symfony\Component\HttpFoundation\Cookie;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+@trigger_error(sprintf('The %s class is deprecated since Symfony 3.3 and will be removed in 4.0. Use Symfony\Component\HttpKernel\EventListener\TestSessionListener instead.', TestSessionListener::class), E_USER_DEPRECATED);
+
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\EventListener\AbstractTestSessionListener;
 
 /**
  * TestSessionListener.
  *
- * Saves session in test environment.
- *
- * @author Bulat Shakirzyanov <mallluhuct@gmail.com>
  * @author Fabien Potencier <fabien@symfony.com>
+ *
+ * @deprecated since version 3.3, to be removed in 4.0.
  */
-class TestSessionListener implements EventSubscriberInterface
+class TestSessionListener extends AbstractTestSessionListener
 {
     protected $container;
 
@@ -36,50 +32,12 @@ class TestSessionListener implements EventSubscriberInterface
         $this->container = $container;
     }
 
-    public function onKernelRequest(GetResponseEvent $event)
+    protected function getSession()
     {
-        if (HttpKernelInterface::MASTER_REQUEST !== $event->getRequestType()) {
-            return;
-        }
-
-        // bootstrap the session
         if (!$this->container->has('session')) {
             return;
         }
 
-        $session = $this->container->get('session');
-        $cookies = $event->getRequest()->cookies;
-
-        if ($cookies->has($session->getName())) {
-            $session->setId($cookies->get($session->getName()));
-        }
-    }
-
-    /**
-     * Checks if session was initialized and saves if current request is master
-     * Runs on 'kernel.response' in test environment
-     *
-     * @param FilterResponseEvent $event
-     */
-    public function onKernelResponse(FilterResponseEvent $event)
-    {
-        if (HttpKernelInterface::MASTER_REQUEST !== $event->getRequestType()) {
-            return;
-        }
-
-        $session = $event->getRequest()->getSession();
-        if ($session && $session->isStarted()) {
-            $session->save();
-            $params = session_get_cookie_params();
-            $event->getResponse()->headers->setCookie(new Cookie($session->getName(), $session->getId(), 0 === $params['lifetime'] ? 0 : time() + $params['lifetime'], $params['path'], $params['domain'], $params['secure'], $params['httponly']));
-        }
-    }
-
-    public static function getSubscribedEvents()
-    {
-        return array(
-            KernelEvents::REQUEST => array('onKernelRequest', 192),
-            KernelEvents::RESPONSE => array('onKernelResponse', -128),
-        );
+        return $this->container->get('session');
     }
 }

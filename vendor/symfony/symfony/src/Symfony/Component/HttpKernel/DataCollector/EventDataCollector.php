@@ -11,25 +11,26 @@
 
 namespace Symfony\Component\HttpKernel\DataCollector;
 
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * EventDataCollector.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class EventDataCollector extends DataCollector
+class EventDataCollector extends DataCollector implements LateDataCollectorInterface
 {
-    private $dispatcher;
+    protected $dispatcher;
 
-    public function setEventDispatcher(EventDispatcherInterface $dispatcher)
+    public function __construct(EventDispatcherInterface $dispatcher = null)
     {
-        if ($dispatcher instanceof TraceableEventDispatcherInterface) {
-            $this->dispatcher = $dispatcher;
+        if ($dispatcher instanceof TraceableEventDispatcherInterface && !method_exists($dispatcher, 'reset')) {
+            @trigger_error(sprintf('Implementing "%s" without the "reset()" method is deprecated since Symfony 3.4 and will be unsupported in 4.0 for class "%s".', TraceableEventDispatcherInterface::class, \get_class($dispatcher)), E_USER_DEPRECATED);
         }
+        $this->dispatcher = $dispatcher;
     }
 
     /**
@@ -38,9 +39,43 @@ class EventDataCollector extends DataCollector
     public function collect(Request $request, Response $response, \Exception $exception = null)
     {
         $this->data = array(
-            'called_listeners'     => null !== $this->dispatcher ? $this->dispatcher->getCalledListeners() : array(),
-            'not_called_listeners' => null !== $this->dispatcher ? $this->dispatcher->getNotCalledListeners() : array(),
+            'called_listeners' => array(),
+            'not_called_listeners' => array(),
         );
+    }
+
+    public function reset()
+    {
+        $this->data = array();
+
+        if ($this->dispatcher instanceof TraceableEventDispatcherInterface) {
+            if (!method_exists($this->dispatcher, 'reset')) {
+                return; // @deprecated
+            }
+
+            $this->dispatcher->reset();
+        }
+    }
+
+    public function lateCollect()
+    {
+        if ($this->dispatcher instanceof TraceableEventDispatcherInterface) {
+            $this->setCalledListeners($this->dispatcher->getCalledListeners());
+            $this->setNotCalledListeners($this->dispatcher->getNotCalledListeners());
+        }
+        $this->data = $this->cloneVar($this->data);
+    }
+
+    /**
+     * Sets the called listeners.
+     *
+     * @param array $listeners An array of called listeners
+     *
+     * @see TraceableEventDispatcherInterface
+     */
+    public function setCalledListeners(array $listeners)
+    {
+        $this->data['called_listeners'] = $listeners;
     }
 
     /**
@@ -53,6 +88,18 @@ class EventDataCollector extends DataCollector
     public function getCalledListeners()
     {
         return $this->data['called_listeners'];
+    }
+
+    /**
+     * Sets the not called listeners.
+     *
+     * @param array $listeners An array of not called listeners
+     *
+     * @see TraceableEventDispatcherInterface
+     */
+    public function setNotCalledListeners(array $listeners)
+    {
+        $this->data['not_called_listeners'] = $listeners;
     }
 
     /**

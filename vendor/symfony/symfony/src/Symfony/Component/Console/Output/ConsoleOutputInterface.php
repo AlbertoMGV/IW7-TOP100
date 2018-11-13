@@ -11,8 +11,6 @@
 
 namespace Symfony\Component\Console\Output;
 
-use Symfony\Component\Console\Output\OutputInterface;
-
 /**
  * ConsoleOutputInterface is the interface implemented by ConsoleOutput class.
  * This adds information about stderr output stream.
@@ -22,6 +20,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 interface ConsoleOutputInterface extends OutputInterface
 {
     /**
+     * Gets the OutputInterface for errors.
+     *
      * @return OutputInterface
      */
     public function getErrorOutput();

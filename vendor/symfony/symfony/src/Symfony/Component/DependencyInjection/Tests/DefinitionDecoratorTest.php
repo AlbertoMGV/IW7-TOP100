@@ -11,9 +11,13 @@
 
 namespace Symfony\Component\DependencyInjection\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\DefinitionDecorator;
 
-class DefinitionDecoratorTest extends \PHPUnit_Framework_TestCase
+/**
+ * @group legacy
+ */
+class DefinitionDecoratorTest extends TestCase
 {
     public function testConstructor()
     {
@@ -43,9 +47,7 @@ class DefinitionDecoratorTest extends \PHPUnit_Framework_TestCase
     {
         return array(
             array('class', 'class'),
-            array('factoryClass', 'factory_class'),
-            array('factoryMethod', 'factory_method'),
-            array('factoryService', 'factory_service'),
+            array('factory', 'factory'),
             array('configurator', 'configurator'),
             array('file', 'file'),
         );
@@ -61,6 +63,26 @@ class DefinitionDecoratorTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('public' => true), $def->getChanges());
     }
 
+    public function testSetLazy()
+    {
+        $def = new DefinitionDecorator('foo');
+
+        $this->assertFalse($def->isLazy());
+        $this->assertSame($def, $def->setLazy(false));
+        $this->assertFalse($def->isLazy());
+        $this->assertEquals(array('lazy' => true), $def->getChanges());
+    }
+
+    public function testSetAutowired()
+    {
+        $def = new DefinitionDecorator('foo');
+
+        $this->assertFalse($def->isAutowired());
+        $this->assertSame($def, $def->setAutowired(true));
+        $this->assertTrue($def->isAutowired());
+        $this->assertSame(array('autowired' => true), $def->getChanges());
+    }
+
     public function testSetArgument()
     {
         $def = new DefinitionDecorator('foo');
@@ -71,7 +93,7 @@ class DefinitionDecoratorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      */
     public function testReplaceArgumentShouldRequireIntegerIndex()
     {
@@ -96,7 +118,7 @@ class DefinitionDecoratorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException OutOfBoundsException
+     * @expectedException \OutOfBoundsException
      */
     public function testGetArgumentShouldCheckBounds()
     {

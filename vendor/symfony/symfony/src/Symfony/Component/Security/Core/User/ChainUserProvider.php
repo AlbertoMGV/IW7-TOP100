@@ -26,29 +26,46 @@ class ChainUserProvider implements UserProviderInterface
 {
     private $providers;
 
-    public function __construct(array $providers)
+    /**
+     * @param iterable|UserProviderInterface[] $providers
+     */
+    public function __construct($providers)
     {
         $this->providers = $providers;
     }
 
     /**
-     * {@inheritDoc}
+     * @return array
+     */
+    public function getProviders()
+    {
+        if ($this->providers instanceof \Traversable) {
+            return iterator_to_array($this->providers);
+        }
+
+        return $this->providers;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function loadUserByUsername($username)
     {
         foreach ($this->providers as $provider) {
             try {
                 return $provider->loadUserByUsername($username);
-            } catch (UsernameNotFoundException $notFound) {
+            } catch (UsernameNotFoundException $e) {
                 // try next one
             }
         }
 
-        throw new UsernameNotFoundException(sprintf('There is no user with name "%s".', $username));
+        $ex = new UsernameNotFoundException(sprintf('There is no user with name "%s".', $username));
+        $ex->setUsername($username);
+        throw $ex;
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function refreshUser(UserInterface $user)
     {
@@ -57,23 +74,25 @@ class ChainUserProvider implements UserProviderInterface
         foreach ($this->providers as $provider) {
             try {
                 return $provider->refreshUser($user);
-            } catch (UnsupportedUserException $unsupported) {
+            } catch (UnsupportedUserException $e) {
                 // try next one
-            } catch (UsernameNotFoundException $notFound) {
+            } catch (UsernameNotFoundException $e) {
                 $supportedUserFound = true;
                 // try next one
             }
         }
 
         if ($supportedUserFound) {
-            throw new UsernameNotFoundException(sprintf('There is no user with name "%s".', $user->getUsername()));
+            $e = new UsernameNotFoundException(sprintf('There is no user with name "%s".', $user->getUsername()));
+            $e->setUsername($user->getUsername());
+            throw $e;
         } else {
-            throw new UnsupportedUserException(sprintf('The account "%s" is not supported.', get_class($user)));
+            throw new UnsupportedUserException(sprintf('The account "%s" is not supported.', \get_class($user)));
         }
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function supportsClass($class)
     {

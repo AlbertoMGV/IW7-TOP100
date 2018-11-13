@@ -11,8 +11,9 @@
 
 namespace Symfony\Component\Security\Core\Authorization;
 
-use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
+use Symfony\Component\Security\Core\Exception\LogicException;
 
 /**
  * AccessDecisionManager is the base class for all access decision managers
@@ -22,29 +23,48 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
  */
 class AccessDecisionManager implements AccessDecisionManagerInterface
 {
+    const STRATEGY_AFFIRMATIVE = 'affirmative';
+    const STRATEGY_CONSENSUS = 'consensus';
+    const STRATEGY_UNANIMOUS = 'unanimous';
+
     private $voters;
     private $strategy;
     private $allowIfAllAbstainDecisions;
     private $allowIfEqualGrantedDeniedDecisions;
 
     /**
-     * Constructor.
+     * @param iterable|VoterInterface[] $voters                             An iterator of VoterInterface instances
+     * @param string                    $strategy                           The vote strategy
+     * @param bool                      $allowIfAllAbstainDecisions         Whether to grant access if all voters abstained or not
+     * @param bool                      $allowIfEqualGrantedDeniedDecisions Whether to grant access if result are equals
      *
-     * @param VoterInterface[] $voters                             An array of VoterInterface instances
-     * @param string           $strategy                           The vote strategy
-     * @param Boolean          $allowIfAllAbstainDecisions         Whether to grant access if all voters abstained or not
-     * @param Boolean          $allowIfEqualGrantedDeniedDecisions Whether to grant access if result are equals
+     * @throws \InvalidArgumentException
      */
-    public function __construct(array $voters, $strategy = 'affirmative', $allowIfAllAbstainDecisions = false, $allowIfEqualGrantedDeniedDecisions = true)
+    public function __construct($voters = array(), $strategy = self::STRATEGY_AFFIRMATIVE, $allowIfAllAbstainDecisions = false, $allowIfEqualGrantedDeniedDecisions = true)
     {
-        if (!$voters) {
-            throw new \InvalidArgumentException('You must at least add one voter.');
+        $strategyMethod = 'decide'.ucfirst($strategy);
+        if (!\is_callable(array($this, $strategyMethod))) {
+            throw new \InvalidArgumentException(sprintf('The strategy "%s" is not supported.', $strategy));
         }
 
         $this->voters = $voters;
-        $this->strategy = 'decide'.ucfirst($strategy);
-        $this->allowIfAllAbstainDecisions = (Boolean) $allowIfAllAbstainDecisions;
-        $this->allowIfEqualGrantedDeniedDecisions = (Boolean) $allowIfEqualGrantedDeniedDecisions;
+        $this->strategy = $strategyMethod;
+        $this->allowIfAllAbstainDecisions = (bool) $allowIfAllAbstainDecisions;
+        $this->allowIfEqualGrantedDeniedDecisions = (bool) $allowIfEqualGrantedDeniedDecisions;
+    }
+
+    /**
+     * Configures the voters.
+     *
+     * @param VoterInterface[] $voters An array of VoterInterface instances
+     *
+     * @deprecated since version 3.3, to be removed in 4.0. Pass the voters to the constructor instead.
+     */
+    public function setVoters(array $voters)
+    {
+        @trigger_error(sprintf('The %s() method is deprecated since Symfony 3.3 and will be removed in 4.0. Pass the voters to the constructor instead.', __METHOD__), E_USER_DEPRECATED);
+
+        $this->voters = $voters;
     }
 
     /**
@@ -53,34 +73,6 @@ class AccessDecisionManager implements AccessDecisionManagerInterface
     public function decide(TokenInterface $token, array $attributes, $object = null)
     {
         return $this->{$this->strategy}($token, $attributes, $object);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsAttribute($attribute)
-    {
-        foreach ($this->voters as $voter) {
-            if ($voter->supportsAttribute($attribute)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsClass($class)
-    {
-        foreach ($this->voters as $voter) {
-            if ($voter->supportsClass($class)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -93,7 +85,7 @@ class AccessDecisionManager implements AccessDecisionManagerInterface
     {
         $deny = 0;
         foreach ($this->voters as $voter) {
-            $result = $voter->vote($token, $object, $attributes);
+            $result = $this->vote($voter, $token, $object, $attributes);
             switch ($result) {
                 case VoterInterface::ACCESS_GRANTED:
                     return true;
@@ -133,9 +125,8 @@ class AccessDecisionManager implements AccessDecisionManagerInterface
     {
         $grant = 0;
         $deny = 0;
-        $abstain = 0;
         foreach ($this->voters as $voter) {
-            $result = $voter->vote($token, $object, $attributes);
+            $result = $this->vote($voter, $token, $object, $attributes);
 
             switch ($result) {
                 case VoterInterface::ACCESS_GRANTED:
@@ -145,11 +136,6 @@ class AccessDecisionManager implements AccessDecisionManagerInterface
 
                 case VoterInterface::ACCESS_DENIED:
                     ++$deny;
-
-                    break;
-
-                default:
-                    ++$abstain;
 
                     break;
             }
@@ -163,7 +149,7 @@ class AccessDecisionManager implements AccessDecisionManagerInterface
             return false;
         }
 
-        if ($grant == $deny && $grant != 0) {
+        if ($grant > 0) {
             return $this->allowIfEqualGrantedDeniedDecisions;
         }
 
@@ -179,9 +165,9 @@ class AccessDecisionManager implements AccessDecisionManagerInterface
     private function decideUnanimous(TokenInterface $token, array $attributes, $object = null)
     {
         $grant = 0;
-        foreach ($attributes as $attribute) {
-            foreach ($this->voters as $voter) {
-                $result = $voter->vote($token, $object, array($attribute));
+        foreach ($this->voters as $voter) {
+            foreach ($attributes as $attribute) {
+                $result = $this->vote($voter, $token, $object, array($attribute));
 
                 switch ($result) {
                     case VoterInterface::ACCESS_GRANTED:
@@ -204,5 +190,28 @@ class AccessDecisionManager implements AccessDecisionManagerInterface
         }
 
         return $this->allowIfAllAbstainDecisions;
+    }
+
+    /**
+     * TokenInterface vote proxy method.
+     *
+     * Acts as a BC layer when the VoterInterface is not implemented on the voter.
+     *
+     * @deprecated as of 3.4 and will be removed in 4.0. Call the voter directly as the instance will always be a VoterInterface
+     */
+    private function vote($voter, TokenInterface $token, $subject, $attributes)
+    {
+        if ($voter instanceof VoterInterface) {
+            return $voter->vote($token, $subject, $attributes);
+        }
+
+        if (method_exists($voter, 'vote')) {
+            @trigger_error(sprintf('Calling vote() on an voter without %1$s is deprecated as of 3.4 and will be removed in 4.0. Implement the %1$s on your voter.', VoterInterface::class), E_USER_DEPRECATED);
+
+            // making the assumption that the signature matches
+            return $voter->vote($token, $subject, $attributes);
+        }
+
+        throw new LogicException(sprintf('%s should implement the %s interface when used as voter.', \get_class($voter), VoterInterface::class));
     }
 }

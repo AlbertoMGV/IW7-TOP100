@@ -11,73 +11,82 @@
 
 namespace Symfony\Bundle\TwigBundle\Tests\Controller;
 
-use Symfony\Bundle\TwigBundle\Tests\TestCase;
-
 use Symfony\Bundle\TwigBundle\Controller\ExceptionController;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Scope;
+use Symfony\Bundle\TwigBundle\Tests\TestCase;
+use Symfony\Component\Debug\Exception\FlattenException;
 use Symfony\Component\HttpFoundation\Request;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
 class ExceptionControllerTest extends TestCase
 {
-    protected $controller;
-    protected $container;
-    protected $flatten;
-    protected $templating;
-    protected $kernel;
-
-    protected function setUp()
+    public function testShowActionCanBeForcedToShowErrorPage()
     {
-        parent::setUp();
+        $twig = $this->createTwigEnv(array('@Twig/Exception/error404.html.twig' => '<html>not found</html>'));
 
-        $this->flatten = $this->getMock('Symfony\Component\HttpKernel\Exception\FlattenException');
-        $this->flatten
-            ->expects($this->once())
-            ->method('getStatusCode')
-            ->will($this->returnValue(404));
-        $this->controller = new ExceptionController();
-        $this->kernel = $this->getMock('Symfony\\Component\\HttpKernel\\KernelInterface');
-        $this->templating = $this->getMockBuilder('Symfony\\Bundle\\TwigBundle\\TwigEngine')
-            ->disableOriginalConstructor()
-            ->getMock();
-        $this->templating
-            ->expects($this->any())
-            ->method('renderResponse')
-            ->will($this->returnValue($this->getMock('Symfony\Component\HttpFoundation\Response')));
-        $this->request = Request::create('/');
-        $this->container = $this->getContainer();
+        $request = $this->createRequest('html');
+        $request->attributes->set('showException', false);
+        $exception = FlattenException::create(new \Exception(), 404);
+        $controller = new ExceptionController($twig, /* "showException" defaults to --> */ true);
+
+        $response = $controller->showAction($request, $exception, null);
+
+        $this->assertEquals(200, $response->getStatusCode()); // successful request
+        $this->assertEquals('<html>not found</html>', $response->getContent());
     }
 
-    protected function tearDown()
+    public function testFallbackToHtmlIfNoTemplateForRequestedFormat()
     {
-        parent::tearDown();
+        $twig = $this->createTwigEnv(array('@Twig/Exception/error.html.twig' => '<html></html>'));
 
-        $this->controller = null;
-        $this->container = null;
-        $this->flatten = null;
-        $this->templating = null;
-        $this->kernel = null;
+        $request = $this->createRequest('txt');
+        $exception = FlattenException::create(new \Exception());
+        $controller = new ExceptionController($twig, false);
+
+        $controller->showAction($request, $exception);
+
+        $this->assertEquals('html', $request->getRequestFormat());
     }
 
-    public function testOnlyClearOwnOutputBuffers()
+    public function testFallbackToHtmlWithFullExceptionIfNoTemplateForRequestedFormatAndExceptionsShouldBeShown()
     {
-        $this->request->headers->set('X-Php-Ob-Level', 1);
+        $twig = $this->createTwigEnv(array('@Twig/Exception/exception_full.html.twig' => '<html></html>'));
 
-        $this->controller->setContainer($this->container);
-        $this->controller->showAction($this->flatten);
+        $request = $this->createRequest('txt');
+        $request->attributes->set('showException', true);
+        $exception = FlattenException::create(new \Exception());
+        $controller = new ExceptionController($twig, false);
+
+        $controller->showAction($request, $exception);
+
+        $this->assertEquals('html', $request->getRequestFormat());
     }
 
-    private function getContainer()
+    public function testResponseHasRequestedMimeType()
     {
-        $container = new ContainerBuilder();
-        $container->addScope(new Scope('request'));
-        $container->set('request', $this->request);
-        $container->set('templating', $this->templating);
-        $container->setParameter('kernel.bundles', array());
-        $container->setParameter('kernel.cache_dir', __DIR__);
-        $container->setParameter('kernel.root_dir', __DIR__);
-        $container->set('kernel', $this->kernel);
+        $twig = $this->createTwigEnv(array('@Twig/Exception/error.json.twig' => '{}'));
 
-        return $container;
+        $request = $this->createRequest('json');
+        $exception = FlattenException::create(new \Exception());
+        $controller = new ExceptionController($twig, false);
+
+        $response = $controller->showAction($request, $exception);
+
+        $this->assertEquals('json', $request->getRequestFormat());
+        $this->assertEquals($request->getMimeType('json'), $response->headers->get('Content-Type'));
+    }
+
+    private function createRequest($requestFormat)
+    {
+        $request = Request::create('whatever');
+        $request->headers->set('X-Php-Ob-Level', 1);
+        $request->setRequestFormat($requestFormat);
+
+        return $request;
+    }
+
+    private function createTwigEnv(array $templates)
+    {
+        return new Environment(new ArrayLoader($templates));
     }
 }

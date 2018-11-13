@@ -11,115 +11,67 @@
 
 namespace Symfony\Component\HttpKernel\DependencyInjection;
 
-use Symfony\Component\Config\Definition\Processor;
-use Symfony\Component\Config\Definition\ConfigurationInterface;
-use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
-use Symfony\Component\DependencyInjection\Extension\ConfigurationExtensionInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\Extension\Extension as BaseExtension;
 
 /**
- * Provides useful features shared by many extensions.
+ * Allow adding classes to the class cache.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-abstract class Extension implements ExtensionInterface, ConfigurationExtensionInterface
+abstract class Extension extends BaseExtension
 {
     private $classes = array();
+    private $annotatedClasses = array();
 
     /**
      * Gets the classes to cache.
      *
      * @return array An array of classes
+     *
+     * @deprecated since version 3.3, to be removed in 4.0.
      */
     public function getClassesToCompile()
     {
+        if (\PHP_VERSION_ID >= 70000) {
+            @trigger_error(__METHOD__.'() is deprecated since Symfony 3.3, to be removed in 4.0.', E_USER_DEPRECATED);
+        }
+
         return $this->classes;
+    }
+
+    /**
+     * Gets the annotated classes to cache.
+     *
+     * @return array An array of classes
+     */
+    public function getAnnotatedClassesToCompile()
+    {
+        return $this->annotatedClasses;
     }
 
     /**
      * Adds classes to the class cache.
      *
-     * @param array $classes An array of classes
+     * @param array $classes An array of class patterns
+     *
+     * @deprecated since version 3.3, to be removed in 4.0.
      */
     public function addClassesToCompile(array $classes)
     {
+        if (\PHP_VERSION_ID >= 70000) {
+            @trigger_error(__METHOD__.'() is deprecated since Symfony 3.3, to be removed in 4.0.', E_USER_DEPRECATED);
+        }
+
         $this->classes = array_merge($this->classes, $classes);
     }
 
     /**
-     * Returns the base path for the XSD files.
+     * Adds annotated classes to the class cache.
      *
-     * @return string The XSD base path
+     * @param array $annotatedClasses An array of class patterns
      */
-    public function getXsdValidationBasePath()
+    public function addAnnotatedClassesToCompile(array $annotatedClasses)
     {
-        return false;
-    }
-
-    /**
-     * Returns the namespace to be used for this extension (XML namespace).
-     *
-     * @return string The XML namespace
-     */
-    public function getNamespace()
-    {
-        return 'http://example.org/schema/dic/'.$this->getAlias();
-    }
-
-    /**
-     * Returns the recommended alias to use in XML.
-     *
-     * This alias is also the mandatory prefix to use when using YAML.
-     *
-     * This convention is to remove the "Extension" postfix from the class
-     * name and then lowercase and underscore the result. So:
-     *
-     *     AcmeHelloExtension
-     *
-     * becomes
-     *
-     *     acme_hello
-     *
-     * This can be overridden in a sub-class to specify the alias manually.
-     *
-     * @return string The alias
-     */
-    public function getAlias()
-    {
-        $className = get_class($this);
-        if (substr($className, -9) != 'Extension') {
-            throw new \BadMethodCallException('This extension does not follow the naming convention; you must overwrite the getAlias() method.');
-        }
-        $classBaseName = substr(strrchr($className, '\\'), 1, -9);
-
-        return Container::underscore($classBaseName);
-    }
-
-    final protected function processConfiguration(ConfigurationInterface $configuration, array $configs)
-    {
-        $processor = new Processor();
-
-        return $processor->processConfiguration($configuration, $configs);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getConfiguration(array $config, ContainerBuilder $container)
-    {
-        $reflected = new \ReflectionClass($this);
-        $namespace = $reflected->getNamespaceName();
-
-        $class = $namespace . '\\Configuration';
-        if (class_exists($class)) {
-            if (!method_exists($class, '__construct')) {
-                $configuration = new $class();
-
-                return $configuration;
-            }
-        }
-
-        return null;
+        $this->annotatedClasses = array_merge($this->annotatedClasses, $annotatedClasses);
     }
 }

@@ -11,19 +11,24 @@
 
 namespace Symfony\Bundle\SecurityBundle\DependencyInjection\Compiler;
 
-use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Exception\LogicException;
+use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
 /**
- * Adds all configured security voters to the access decision manager
+ * Adds all configured security voters to the access decision manager.
  *
  * @author Johannes M. Schmitt <schmittjoh@gmail.com>
  */
 class AddSecurityVotersPass implements CompilerPassInterface
 {
+    use PriorityTaggedServiceTrait;
+
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function process(ContainerBuilder $container)
     {
@@ -31,15 +36,26 @@ class AddSecurityVotersPass implements CompilerPassInterface
             return;
         }
 
-        $voters = new \SplPriorityQueue();
-        foreach ($container->findTaggedServiceIds('security.voter') as $id => $attributes) {
-            $priority = isset($attributes[0]['priority']) ? $attributes[0]['priority'] : 0;
-            $voters->insert(new Reference($id), $priority);
+        $voters = $this->findAndSortTaggedServices('security.voter', $container);
+        if (!$voters) {
+            throw new LogicException('No security voters found. You need to tag at least one with "security.voter"');
         }
 
-        $voters = iterator_to_array($voters);
-        ksort($voters);
+        foreach ($voters as $voter) {
+            $definition = $container->getDefinition((string) $voter);
+            $class = $container->getParameterBag()->resolveValue($definition->getClass());
 
-        $container->getDefinition('security.access.decision_manager')->replaceArgument(0, array_values($voters));
+            if (!is_a($class, VoterInterface::class, true)) {
+                @trigger_error(sprintf('Using a "security.voter" tag on a class without implementing the "%s" is deprecated as of 3.4 and will throw an exception in 4.0. Implement the interface instead.', VoterInterface::class), E_USER_DEPRECATED);
+            }
+
+            if (!method_exists($class, 'vote')) {
+                // in case the vote method is completely missing, to prevent exceptions when voting
+                throw new LogicException(sprintf('%s should implement the %s interface when used as voter.', $class, VoterInterface::class));
+            }
+        }
+
+        $adm = $container->getDefinition('security.access.decision_manager');
+        $adm->replaceArgument(0, new IteratorArgument($voters));
     }
 }

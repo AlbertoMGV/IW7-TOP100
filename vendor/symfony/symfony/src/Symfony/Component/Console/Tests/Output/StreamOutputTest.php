@@ -11,10 +11,11 @@
 
 namespace Symfony\Component\Console\Tests\Output;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\StreamOutput;
 
-class StreamOutputTest extends \PHPUnit_Framework_TestCase
+class StreamOutputTest extends TestCase
 {
     protected $stream;
 
@@ -30,17 +31,18 @@ class StreamOutputTest extends \PHPUnit_Framework_TestCase
 
     public function testConstructor()
     {
-        try {
-            $output = new StreamOutput('foo');
-            $this->fail('__construct() throws an \InvalidArgumentException if the first argument is not a stream');
-        } catch (\Exception $e) {
-            $this->assertInstanceOf('\InvalidArgumentException', $e, '__construct() throws an \InvalidArgumentException if the first argument is not a stream');
-            $this->assertEquals('The StreamOutput class needs a stream as its first argument.', $e->getMessage());
-        }
-
         $output = new StreamOutput($this->stream, Output::VERBOSITY_QUIET, true);
         $this->assertEquals(Output::VERBOSITY_QUIET, $output->getVerbosity(), '__construct() takes the verbosity as its first argument');
         $this->assertTrue($output->isDecorated(), '__construct() takes the decorated flag as its second argument');
+    }
+
+    /**
+     * @expectedException        \InvalidArgumentException
+     * @expectedExceptionMessage The StreamOutput class needs a stream as its first argument.
+     */
+    public function testStreamIsRequired()
+    {
+        new StreamOutput('foo');
     }
 
     public function testGetStream()

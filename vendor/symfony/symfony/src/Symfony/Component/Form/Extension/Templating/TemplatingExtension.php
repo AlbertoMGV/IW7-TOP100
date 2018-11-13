@@ -11,11 +11,11 @@
 
 namespace Symfony\Component\Form\Extension\Templating;
 
+use Symfony\Bundle\FrameworkBundle\Templating\Helper\FormHelper;
 use Symfony\Component\Form\AbstractExtension;
 use Symfony\Component\Form\FormRenderer;
-use Symfony\Component\Form\Extension\Csrf\CsrfProvider\CsrfProviderInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Templating\PhpEngine;
-use Symfony\Bundle\FrameworkBundle\Templating\Helper\FormHelper;
 
 /**
  * Integrates the Templating component with the Form library.
@@ -24,10 +24,10 @@ use Symfony\Bundle\FrameworkBundle\Templating\Helper\FormHelper;
  */
 class TemplatingExtension extends AbstractExtension
 {
-    public function __construct(PhpEngine $engine, CsrfProviderInterface $csrfProvider = null, array $defaultThemes = array())
+    public function __construct(PhpEngine $engine, CsrfTokenManagerInterface $csrfTokenManager = null, array $defaultThemes = array())
     {
         $engine->addHelpers(array(
-            new FormHelper(new FormRenderer(new TemplatingRendererEngine($engine, $defaultThemes), $csrfProvider))
+            new FormHelper(new FormRenderer(new TemplatingRendererEngine($engine, $defaultThemes), $csrfTokenManager)),
         ));
     }
 }

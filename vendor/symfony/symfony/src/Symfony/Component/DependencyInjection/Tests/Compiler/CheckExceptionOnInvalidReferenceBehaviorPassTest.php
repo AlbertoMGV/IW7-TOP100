@@ -11,13 +11,14 @@
 
 namespace Symfony\Component\DependencyInjection\Tests\Compiler;
 
-use Symfony\Component\DependencyInjection\Definition;
-
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\DependencyInjection\Argument\BoundArgument;
 use Symfony\Component\DependencyInjection\Compiler\CheckExceptionOnInvalidReferenceBehaviorPass;
-use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
 
-class CheckExceptionOnInvalidReferenceBehaviorPassTest extends \PHPUnit_Framework_TestCase
+class CheckExceptionOnInvalidReferenceBehaviorPassTest extends TestCase
 {
     public function testProcess()
     {
@@ -28,10 +29,14 @@ class CheckExceptionOnInvalidReferenceBehaviorPassTest extends \PHPUnit_Framewor
             ->addArgument(new Reference('b'))
         ;
         $container->register('b', '\stdClass');
+
+        $this->process($container);
+
+        $this->addToAssertionCount(1);
     }
 
     /**
-     * @expectedException Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException
      */
     public function testProcessThrowsExceptionOnInvalidReference()
     {
@@ -46,7 +51,7 @@ class CheckExceptionOnInvalidReferenceBehaviorPassTest extends \PHPUnit_Framewor
     }
 
     /**
-     * @expectedException Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException
      */
     public function testProcessThrowsExceptionOnInvalidReferenceFromInlinedDefinition()
     {
@@ -61,6 +66,20 @@ class CheckExceptionOnInvalidReferenceBehaviorPassTest extends \PHPUnit_Framewor
         ;
 
         $this->process($container);
+    }
+
+    public function testProcessDefinitionWithBindings()
+    {
+        $container = new ContainerBuilder();
+
+        $container
+            ->register('b')
+            ->setBindings(array(new BoundArgument(new Reference('a'))))
+        ;
+
+        $this->process($container);
+
+        $this->addToAssertionCount(1);
     }
 
     private function process(ContainerBuilder $container)

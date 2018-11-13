@@ -12,8 +12,6 @@
 namespace Symfony\Component\HttpFoundation\Session\Storage\Proxy;
 
 /**
- * AbstractProxy.
- *
  * @author Drak <drak@zikula.org>
  */
 abstract class AbstractProxy
@@ -21,14 +19,9 @@ abstract class AbstractProxy
     /**
      * Flag if handler wraps an internal PHP session handler (using \SessionHandler).
      *
-     * @var boolean
+     * @var bool
      */
     protected $wrapper = false;
-
-    /**
-     * @var boolean
-     */
-    protected $active = false;
 
     /**
      * @var string
@@ -48,17 +41,17 @@ abstract class AbstractProxy
     /**
      * Is this proxy handler and instance of \SessionHandlerInterface.
      *
-     * @return boolean
+     * @return bool
      */
     public function isSessionHandlerInterface()
     {
-        return ($this instanceof \SessionHandlerInterface);
+        return $this instanceof \SessionHandlerInterface;
     }
 
     /**
      * Returns true if this handler wraps an internal PHP session save handler using \SessionHandler.
      *
-     * @return Boolean
+     * @return bool
      */
     public function isWrapper()
     {
@@ -68,21 +61,11 @@ abstract class AbstractProxy
     /**
      * Has a session started?
      *
-     * @return Boolean
+     * @return bool
      */
     public function isActive()
     {
-        return $this->active;
-    }
-
-    /**
-     * Sets the active flag.
-     *
-     * @param Boolean $flag
-     */
-    public function setActive($flag)
-    {
-        $this->active = (bool) $flag;
+        return \PHP_SESSION_ACTIVE === session_status();
     }
 
     /**
@@ -99,6 +82,8 @@ abstract class AbstractProxy
      * Sets the session ID.
      *
      * @param string $id
+     *
+     * @throws \LogicException
      */
     public function setId($id)
     {
@@ -123,6 +108,8 @@ abstract class AbstractProxy
      * Sets the session name.
      *
      * @param string $name
+     *
+     * @throws \LogicException
      */
     public function setName($name)
     {

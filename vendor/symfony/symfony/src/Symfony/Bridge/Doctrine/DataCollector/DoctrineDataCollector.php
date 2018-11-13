@@ -14,9 +14,9 @@ namespace Symfony\Bridge\Doctrine\DataCollector;
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Logging\DebugStack;
 use Doctrine\DBAL\Types\Type;
-use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 
 /**
  * DoctrineDataCollector.
@@ -28,6 +28,10 @@ class DoctrineDataCollector extends DataCollector
     private $registry;
     private $connections;
     private $managers;
+
+    /**
+     * @var DebugStack[]
+     */
     private $loggers = array();
 
     public function __construct(ManagerRegistry $registry)
@@ -59,10 +63,20 @@ class DoctrineDataCollector extends DataCollector
         }
 
         $this->data = array(
-            'queries'     => $queries,
+            'queries' => $queries,
             'connections' => $this->connections,
-            'managers'    => $this->managers,
+            'managers' => $this->managers,
         );
+    }
+
+    public function reset()
+    {
+        $this->data = array();
+
+        foreach ($this->loggers as $logger) {
+            $logger->queries = array();
+            $logger->currentQuery = 0;
+        }
     }
 
     public function getManagers()
@@ -117,12 +131,17 @@ class DoctrineDataCollector extends DataCollector
     private function sanitizeQuery($connectionName, $query)
     {
         $query['explainable'] = true;
-        $query['params'] = (array) $query['params'];
-        foreach ($query['params'] as $j => &$param) {
+        if (null === $query['params']) {
+            $query['params'] = array();
+        }
+        if (!\is_array($query['params'])) {
+            $query['params'] = array($query['params']);
+        }
+        foreach ($query['params'] as $j => $param) {
             if (isset($query['types'][$j])) {
                 // Transform the param according to the type
                 $type = $query['types'][$j];
-                if (is_string($type)) {
+                if (\is_string($type)) {
                     $type = Type::getType($type);
                 }
                 if ($type instanceof Type) {
@@ -131,7 +150,7 @@ class DoctrineDataCollector extends DataCollector
                 }
             }
 
-            list($param, $explainable) = $this->sanitizeParam($param);
+            list($query['params'][$j], $explainable) = $this->sanitizeParam($param);
             if (!$explainable) {
                 $query['explainable'] = false;
             }
@@ -148,15 +167,20 @@ class DoctrineDataCollector extends DataCollector
      * value to explain the query).
      *
      * @param mixed $var
+     *
      * @return array
      */
     private function sanitizeParam($var)
     {
-        if (is_object($var)) {
-            return array(sprintf('Object(%s)', get_class($var)), false);
+        if (\is_object($var)) {
+            $className = \get_class($var);
+
+            return method_exists($var, '__toString') ?
+                array(sprintf('Object(%s): "%s"', $className, $var->__toString()), false) :
+                array(sprintf('Object(%s)', $className), false);
         }
 
-        if (is_array($var)) {
+        if (\is_array($var)) {
             $a = array();
             $original = true;
             foreach ($var as $k => $v) {
@@ -168,7 +192,7 @@ class DoctrineDataCollector extends DataCollector
             return array($a, $original);
         }
 
-        if (is_resource($var)) {
+        if (\is_resource($var)) {
             return array(sprintf('Resource(%s)', get_resource_type($var)), false);
         }
 

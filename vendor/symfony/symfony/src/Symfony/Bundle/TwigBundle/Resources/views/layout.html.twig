@@ -1,42 +1,36 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta http-equiv="Content-Type" content="text/html; charset={{ _charset }}"/>
+        <meta charset="{{ _charset }}" />
         <meta name="robots" content="noindex,nofollow" />
-        <title>{% block title '' %}</title>
-        <link href="{{ asset('bundles/framework/css/exception_layout.css') }}" rel="stylesheet" type="text/css" media="all" />
-        <link href="{{ asset('bundles/framework/css/exception.css') }}" rel="stylesheet" type="text/css" media="all" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>{% block title %}{% endblock %}</title>
+        <link rel="icon" type="image/png" href="{{ include('@Twig/images/favicon.png.base64') }}">
+        <style>{{ include('@Twig/exception.css.twig') }}</style>
+        {% block head %}{% endblock %}
     </head>
     <body>
-        <div id="content">
-            <div class="header clear_fix">
-                <div class="header_logo">
-                    <img src="{{ asset('bundles/framework/images/logo_symfony.png') }}" alt="Symfony" />
+        <header>
+            <div class="container">
+                <h1 class="logo">{{ include('@Twig/images/symfony-logo.svg') }} Symfony Exception</h1>
+
+                <div class="help-link">
+                    <a href="https://symfony.com/doc">
+                        <span class="icon">{{ include('@Twig/images/icon-book.svg') }}</span>
+                        <span class="hidden-xs-down">Symfony</span> Docs
+                    </a>
                 </div>
 
-                <div class="search">
-                  <form method="get" action="http://symfony.com/search">
-                    <div class="form_row">
-
-                      <label for="search_id">
-                          <img src="{{ asset('bundles/framework/images/grey_magnifier.png') }}" alt="Search on Symfony website" />
-                      </label>
-
-                      <input name="q" id="search_id" type="search" placeholder="Search on Symfony website" />
-
-                      <button type="submit">
-                        <span class="border_l">
-                          <span class="border_r">
-                            <span class="btn_bg">OK</span>
-                          </span>
-                        </span>
-                      </button>
-                    </div>
-                   </form>
+                <div class="help-link">
+                    <a href="https://symfony.com/support">
+                        <span class="icon">{{ include('@Twig/images/icon-support.svg') }}</span>
+                        <span class="hidden-xs-down">Symfony</span> Support
+                    </a>
                 </div>
             </div>
+        </header>
 
-            {% block body '' %}
-        </div>
+        {% block body %}{% endblock %}
+        {{ include('@Twig/base_js.html.twig') }}
     </body>
 </html>

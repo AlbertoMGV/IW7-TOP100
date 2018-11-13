@@ -11,16 +11,34 @@
 
 namespace Symfony\Component\HttpKernel\DataCollector;
 
+use Symfony\Component\HttpKernel\DataCollector\Util\ValueExporter;
+use Symfony\Component\VarDumper\Caster\CutStub;
+use Symfony\Component\VarDumper\Cloner\ClonerInterface;
+use Symfony\Component\VarDumper\Cloner\Data;
+use Symfony\Component\VarDumper\Cloner\Stub;
+use Symfony\Component\VarDumper\Cloner\VarCloner;
+
 /**
  * DataCollector.
  *
  * Children of this class must store the collected data in the data property.
  *
  * @author Fabien Potencier <fabien@symfony.com>
+ * @author Bernhard Schussek <bschussek@symfony.com>
  */
 abstract class DataCollector implements DataCollectorInterface, \Serializable
 {
-    protected $data;
+    protected $data = array();
+
+    /**
+     * @var ValueExporter
+     */
+    private $valueExporter;
+
+    /**
+     * @var ClonerInterface
+     */
+    private $cloner;
 
     public function serialize()
     {
@@ -33,43 +51,78 @@ abstract class DataCollector implements DataCollectorInterface, \Serializable
     }
 
     /**
+     * Converts the variable into a serializable Data instance.
+     *
+     * This array can be displayed in the template using
+     * the VarDumper component.
+     *
+     * @param mixed $var
+     *
+     * @return Data
+     */
+    protected function cloneVar($var)
+    {
+        if ($var instanceof Data) {
+            return $var;
+        }
+        if (null === $this->cloner) {
+            if (class_exists(CutStub::class)) {
+                $this->cloner = new VarCloner();
+                $this->cloner->setMaxItems(-1);
+                $this->cloner->addCasters($this->getCasters());
+            } else {
+                @trigger_error(sprintf('Using the %s() method without the VarDumper component is deprecated since Symfony 3.2 and won\'t be supported in 4.0. Install symfony/var-dumper version 3.2 or above.', __METHOD__), E_USER_DEPRECATED);
+                $this->cloner = false;
+            }
+        }
+        if (false === $this->cloner) {
+            if (null === $this->valueExporter) {
+                $this->valueExporter = new ValueExporter();
+            }
+
+            return $this->valueExporter->exportValue($var);
+        }
+
+        return $this->cloner->cloneVar($var);
+    }
+
+    /**
      * Converts a PHP variable to a string.
      *
      * @param mixed $var A PHP variable
      *
      * @return string The string representation of the variable
+     *
+     * @deprecated since version 3.2, to be removed in 4.0. Use cloneVar() instead.
      */
     protected function varToString($var)
     {
-        if (is_object($var)) {
-            return sprintf('Object(%s)', get_class($var));
+        @trigger_error(sprintf('The %s() method is deprecated since Symfony 3.2 and will be removed in 4.0. Use cloneVar() instead.', __METHOD__), E_USER_DEPRECATED);
+
+        if (null === $this->valueExporter) {
+            $this->valueExporter = new ValueExporter();
         }
 
-        if (is_array($var)) {
-            $a = array();
-            foreach ($var as $k => $v) {
-                $a[] = sprintf('%s => %s', $k, $this->varToString($v));
-            }
+        return $this->valueExporter->exportValue($var);
+    }
 
-            return sprintf("Array(%s)", implode(', ', $a));
-        }
+    /**
+     * @return callable[] The casters to add to the cloner
+     */
+    protected function getCasters()
+    {
+        return array(
+            '*' => function ($v, array $a, Stub $s, $isNested) {
+                if (!$v instanceof Stub) {
+                    foreach ($a as $k => $v) {
+                        if (\is_object($v) && !$v instanceof \DateTimeInterface && !$v instanceof Stub) {
+                            $a[$k] = new CutStub($v);
+                        }
+                    }
+                }
 
-        if (is_resource($var)) {
-            return sprintf('Resource(%s)', get_resource_type($var));
-        }
-
-        if (null === $var) {
-            return 'null';
-        }
-
-        if (false === $var) {
-            return 'false';
-        }
-
-        if (true === $var) {
-            return 'true';
-        }
-
-        return (string) $var;
+                return $a;
+            },
+        );
     }
 }

@@ -12,25 +12,34 @@
 namespace Symfony\Component\Validator\Constraints;
 
 use Symfony\Component\Validator\Constraint;
-use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
 
 /**
  * @Annotation
+ * @Target({"PROPERTY", "METHOD", "ANNOTATION"})
  *
- * @api
+ * @author Bernhard Schussek <bschussek@gmail.com>
  */
 class Valid extends Constraint
 {
     public $traverse = true;
 
-    public $deep = false;
-
-    public function __construct($options = null)
+    public function __get($option)
     {
-        if (is_array($options) && array_key_exists('groups', $options)) {
-            throw new ConstraintDefinitionException('The option "groups" is not supported by the constraint ' . __CLASS__);
+        if ('groups' === $option) {
+            // when this is reached, no groups have been configured
+            return null;
         }
 
-        parent::__construct($options);
+        return parent::__get($option);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addImplicitGroupName($group)
+    {
+        if (null !== $this->groups) {
+            parent::addImplicitGroupName($group);
+        }
     }
 }

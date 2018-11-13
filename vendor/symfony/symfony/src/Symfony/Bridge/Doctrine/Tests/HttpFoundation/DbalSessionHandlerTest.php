@@ -9,29 +9,25 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Bridge\Doctrine\HttpFoundation;
+namespace Symfony\Bridge\Doctrine\Tests\HttpFoundation;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Doctrine\HttpFoundation\DbalSessionHandler;
 
 /**
  * Test class for DbalSessionHandler.
  *
  * @author Drak <drak@zikula.org>
+ *
+ * @group legacy
  */
-class DbalSessionHandlerTest extends \PHPUnit_Framework_TestCase
+class DbalSessionHandlerTest extends TestCase
 {
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Component\HttpFoundation\Request')) {
-            $this->markTestSkipped('The "HttpFoundation" component is not available');
-        }
-    }
-
     public function testConstruct()
     {
-        $this->connection = $this->getMock('Doctrine\DBAL\Driver\Connection');
-        $mock = $this->getMockBuilder('Symfony\Bridge\Doctrine\HttpFoundation\DbalSessionHandler');
-        $mock->setConstructorArgs(array($this->connection));
-        $this->driver = $mock->getMock();
+        $connection = $this->getMockBuilder('Doctrine\DBAL\Connection')->disableOriginalConstructor()->getMock();
+        $handler = new DbalSessionHandler($connection);
+
+        $this->assertInstanceOf('Symfony\Bridge\Doctrine\HttpFoundation\DbalSessionHandler', $handler);
     }
 }

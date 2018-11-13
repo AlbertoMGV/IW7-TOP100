@@ -18,10 +18,7 @@ namespace Symfony\Component\Finder\Comparator;
  */
 class DateComparator extends Comparator
 {
-
     /**
-     * Constructor.
-     *
      * @param string $test A comparison string
      *
      * @throws \InvalidArgumentException If the test is not understood

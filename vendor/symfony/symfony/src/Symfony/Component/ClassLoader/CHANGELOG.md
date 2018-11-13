@@ -1,6 +1,32 @@
 CHANGELOG
 =========
 
+3.3.0
+-----
+
+ * deprecated the component: use Composer instead
+
+3.0.0
+-----
+
+ * The DebugClassLoader class has been removed
+ * The DebugUniversalClassLoader class has been removed
+ * The UniversalClassLoader class has been removed
+ * The ApcUniversalClassLoader class has been removed
+
+2.4.0
+-----
+
+ * deprecated the UniversalClassLoader in favor of the ClassLoader class instead
+ * deprecated the ApcUniversalClassLoader in favor of the ApcClassLoader class instead
+ * deprecated the DebugUniversalClassLoader in favor of the DebugClassLoader class from the Debug component
+ * deprecated the DebugClassLoader as it has been moved to the Debug component instead
+
+2.3.0
+-----
+
+ * added a WinCacheClassLoader for WinCache
+
 2.1.0
 -----
 

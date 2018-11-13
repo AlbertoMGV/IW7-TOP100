@@ -20,25 +20,22 @@ use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
  * it themselves which improves performance quite a lot.
  *
  * @author Johannes M. Schmitt <schmittjoh@gmail.com>
+ *
+ * @final since version 3.4
  */
 class ServiceReferenceGraph
 {
-    private $nodes;
-
     /**
-     * Constructor.
+     * @var ServiceReferenceGraphNode[]
      */
-    public function __construct()
-    {
-        $this->nodes = array();
-    }
+    private $nodes = array();
 
     /**
      * Checks if the graph has a specific node.
      *
      * @param string $id Id to check
      *
-     * @return Boolean
+     * @return bool
      */
     public function hasNode($id)
     {
@@ -50,7 +47,7 @@ class ServiceReferenceGraph
      *
      * @param string $id The id to retrieve
      *
-     * @return ServiceReferenceGraphNode The node matching the supplied identifier
+     * @return ServiceReferenceGraphNode
      *
      * @throws InvalidArgumentException if no node matches the supplied identifier
      */
@@ -66,7 +63,7 @@ class ServiceReferenceGraph
     /**
      * Returns all nodes.
      *
-     * @return array An array of all ServiceReferenceGraphNode objects
+     * @return ServiceReferenceGraphNode[]
      */
     public function getNodes()
     {
@@ -78,6 +75,9 @@ class ServiceReferenceGraph
      */
     public function clear()
     {
+        foreach ($this->nodes as $node) {
+            $node->clear();
+        }
         $this->nodes = array();
     }
 
@@ -85,16 +85,25 @@ class ServiceReferenceGraph
      * Connects 2 nodes together in the Graph.
      *
      * @param string $sourceId
-     * @param string $sourceValue
+     * @param mixed  $sourceValue
      * @param string $destId
-     * @param string $destValue
+     * @param mixed  $destValue
      * @param string $reference
+     * @param bool   $lazy
+     * @param bool   $weak
      */
-    public function connect($sourceId, $sourceValue, $destId, $destValue = null, $reference = null)
+    public function connect($sourceId, $sourceValue, $destId, $destValue = null, $reference = null/*, bool $lazy = false, bool $weak = false*/)
     {
+        $lazy = \func_num_args() >= 6 ? func_get_arg(5) : false;
+        $weak = \func_num_args() >= 7 ? func_get_arg(6) : false;
+
+        if (null === $sourceId || null === $destId) {
+            return;
+        }
+
         $sourceNode = $this->createNode($sourceId, $sourceValue);
         $destNode = $this->createNode($destId, $destValue);
-        $edge = new ServiceReferenceGraphEdge($sourceNode, $destNode, $reference);
+        $edge = new ServiceReferenceGraphEdge($sourceNode, $destNode, $reference, $lazy, $weak);
 
         $sourceNode->addOutEdge($edge);
         $destNode->addInEdge($edge);
@@ -104,7 +113,7 @@ class ServiceReferenceGraph
      * Creates a graph node.
      *
      * @param string $id
-     * @param string $value
+     * @param mixed  $value
      *
      * @return ServiceReferenceGraphNode
      */

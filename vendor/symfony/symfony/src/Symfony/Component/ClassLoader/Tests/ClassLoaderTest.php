@@ -11,16 +11,20 @@
 
 namespace Symfony\Component\ClassLoader\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\ClassLoader\ClassLoader;
 
-class ClassLoaderTest extends \PHPUnit_Framework_TestCase
+/**
+ * @group legacy
+ */
+class ClassLoaderTest extends TestCase
 {
     public function testGetPrefixes()
     {
         $loader = new ClassLoader();
-        $loader->addPrefix('Foo', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix('Bar', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix('Bas', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Foo', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Bar', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Bas', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
         $prefixes = $loader->getPrefixes();
         $this->assertArrayHasKey('Foo', $prefixes);
         $this->assertArrayNotHasKey('Foo1', $prefixes);
@@ -31,8 +35,8 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
     public function testGetFallbackDirs()
     {
         $loader = new ClassLoader();
-        $loader->addPrefix(null, __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix(null, __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix(null, __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix(null, __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
         $fallback_dirs = $loader->getFallbackDirs();
         $this->assertCount(2, $fallback_dirs);
     }
@@ -43,8 +47,8 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
     public function testLoadClass($className, $testClassName, $message)
     {
         $loader = new ClassLoader();
-        $loader->addPrefix('Namespaced2\\', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix('Pearlike2_', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Namespaced2\\', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Pearlike2_', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
         $loader->loadClass($testClassName);
         $this->assertTrue(class_exists($className), $message);
     }
@@ -54,8 +58,6 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
         return array(
             array('\\Namespaced2\\Foo', 'Namespaced2\\Foo',   '->loadClass() loads Namespaced2\Foo class'),
             array('\\Pearlike2_Foo',    'Pearlike2_Foo',      '->loadClass() loads Pearlike2_Foo class'),
-            array('\\Namespaced2\\Bar', '\\Namespaced2\\Bar', '->loadClass() loads Namespaced2\Bar class with a leading slash'),
-            array('\\Pearlike2_Bar',    '\\Pearlike2_Bar',    '->loadClass() loads Pearlike2_Bar class with a leading slash'),
         );
     }
 
@@ -65,8 +67,8 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
     public function testLoadNonexistentClass($className, $testClassName, $message)
     {
         $loader = new ClassLoader();
-        $loader->addPrefix('Namespaced2\\', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix('Pearlike2_', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Namespaced2\\', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Pearlike2_', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
         $loader->loadClass($testClassName);
         $this->assertFalse(class_exists($className), $message);
     }
@@ -74,18 +76,40 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
     public function getLoadNonexistentClassTests()
     {
         return array(
-            array('\\Pearlike3_Bar', '\\Pearlike3_Bar', '->loadClass() loads non exising Pearlike3_Bar class with a leading slash'),
+            array('\\Pearlike3_Bar', '\\Pearlike3_Bar', '->loadClass() loads non existing Pearlike3_Bar class with a leading slash'),
         );
     }
 
-    public function testAddPrefix()
+    public function testAddPrefixSingle()
     {
         $loader = new ClassLoader();
-        $loader->addPrefix('Foo', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix('Foo', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Foo', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Foo', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $prefixes = $loader->getPrefixes();
+        $this->assertArrayHasKey('Foo', $prefixes);
+        $this->assertCount(1, $prefixes['Foo']);
+    }
+
+    public function testAddPrefixesSingle()
+    {
+        $loader = new ClassLoader();
+        $loader->addPrefixes(array('Foo' => array('foo', 'foo')));
+        $loader->addPrefixes(array('Foo' => array('foo')));
+        $prefixes = $loader->getPrefixes();
+        $this->assertArrayHasKey('Foo', $prefixes);
+        $this->assertCount(1, $prefixes['Foo'], print_r($prefixes, true));
+    }
+
+    public function testAddPrefixMulti()
+    {
+        $loader = new ClassLoader();
+        $loader->addPrefix('Foo', 'foo');
+        $loader->addPrefix('Foo', 'bar');
         $prefixes = $loader->getPrefixes();
         $this->assertArrayHasKey('Foo', $prefixes);
         $this->assertCount(2, $prefixes['Foo']);
+        $this->assertContains('foo', $prefixes['Foo']);
+        $this->assertContains('bar', $prefixes['Foo']);
     }
 
     public function testUseIncludePath()
@@ -100,9 +124,9 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
         $loader->setUseIncludePath(true);
         $this->assertTrue($loader->getUseIncludePath());
 
-        set_include_path(__DIR__.'/Fixtures/includepath' . PATH_SEPARATOR . $includePath);
+        set_include_path(__DIR__.'/Fixtures/includepath'.PATH_SEPARATOR.$includePath);
 
-        $this->assertEquals(__DIR__.DIRECTORY_SEPARATOR.'Fixtures'.DIRECTORY_SEPARATOR.'includepath'.DIRECTORY_SEPARATOR.'Foo.php', $loader->findFile('Foo'));
+        $this->assertEquals(__DIR__.\DIRECTORY_SEPARATOR.'Fixtures'.\DIRECTORY_SEPARATOR.'includepath'.\DIRECTORY_SEPARATOR.'Foo.php', $loader->findFile('Foo'));
 
         set_include_path($includePath);
     }
@@ -113,9 +137,9 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
     public function testLoadClassFromFallback($className, $testClassName, $message)
     {
         $loader = new ClassLoader();
-        $loader->addPrefix('Namespaced2\\', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix('Pearlike2_', __DIR__.DIRECTORY_SEPARATOR.'Fixtures');
-        $loader->addPrefix('', array(__DIR__.DIRECTORY_SEPARATOR.'Fixtures/fallback'));
+        $loader->addPrefix('Namespaced2\\', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('Pearlike2_', __DIR__.\DIRECTORY_SEPARATOR.'Fixtures');
+        $loader->addPrefix('', array(__DIR__.\DIRECTORY_SEPARATOR.'Fixtures/fallback'));
         $loader->loadClass($testClassName);
         $this->assertTrue(class_exists($className), $message);
     }
@@ -147,64 +171,64 @@ class ClassLoaderTest extends \PHPUnit_Framework_TestCase
         return array(
             array(
                 array(
-                    'NamespaceCollision\\C' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
-                    'NamespaceCollision\\C\\B' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'NamespaceCollision\\C' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'NamespaceCollision\\C\\B' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
                 ),
                 'NamespaceCollision\C\Foo',
                 '->loadClass() loads NamespaceCollision\C\Foo from alpha.',
             ),
             array(
                 array(
-                    'NamespaceCollision\\C\\B' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
-                    'NamespaceCollision\\C' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'NamespaceCollision\\C\\B' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'NamespaceCollision\\C' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
                 ),
                 'NamespaceCollision\C\Bar',
                 '->loadClass() loads NamespaceCollision\C\Bar from alpha.',
             ),
             array(
                 array(
-                    'NamespaceCollision\\C' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
-                    'NamespaceCollision\\C\\B' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'NamespaceCollision\\C' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'NamespaceCollision\\C\\B' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
                 ),
                 'NamespaceCollision\C\B\Foo',
                 '->loadClass() loads NamespaceCollision\C\B\Foo from beta.',
             ),
             array(
                 array(
-                    'NamespaceCollision\\C\\B' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
-                    'NamespaceCollision\\C' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'NamespaceCollision\\C\\B' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'NamespaceCollision\\C' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
                 ),
                 'NamespaceCollision\C\B\Bar',
                 '->loadClass() loads NamespaceCollision\C\B\Bar from beta.',
             ),
             array(
                 array(
-                    'PrefixCollision_C_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
-                    'PrefixCollision_C_B_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'PrefixCollision_C_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'PrefixCollision_C_B_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
                 ),
                 'PrefixCollision_C_Foo',
                 '->loadClass() loads PrefixCollision_C_Foo from alpha.',
             ),
             array(
                 array(
-                    'PrefixCollision_C_B_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
-                    'PrefixCollision_C_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'PrefixCollision_C_B_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'PrefixCollision_C_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
                 ),
                 'PrefixCollision_C_Bar',
                 '->loadClass() loads PrefixCollision_C_Bar from alpha.',
             ),
             array(
                 array(
-                    'PrefixCollision_C_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
-                    'PrefixCollision_C_B_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'PrefixCollision_C_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'PrefixCollision_C_B_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
                 ),
                 'PrefixCollision_C_B_Foo',
                 '->loadClass() loads PrefixCollision_C_B_Foo from beta.',
             ),
             array(
                 array(
-                    'PrefixCollision_C_B_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/beta',
-                    'PrefixCollision_C_' => __DIR__.DIRECTORY_SEPARATOR.'Fixtures/alpha',
+                    'PrefixCollision_C_B_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/beta',
+                    'PrefixCollision_C_' => __DIR__.\DIRECTORY_SEPARATOR.'Fixtures/alpha',
                 ),
                 'PrefixCollision_C_B_Bar',
                 '->loadClass() loads PrefixCollision_C_B_Bar from beta.',

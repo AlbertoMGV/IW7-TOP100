@@ -11,31 +11,33 @@
 
 namespace Symfony\Component\Routing\Loader;
 
-use Symfony\Component\Routing\RouteCollection;
-use Symfony\Component\Routing\Route;
-use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\Config\Loader\FileLoader;
+use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\Config\Util\XmlUtils;
+use Symfony\Component\Routing\Route;
+use Symfony\Component\Routing\RouteCollection;
 
 /**
  * XmlFileLoader loads XML routing files.
  *
  * @author Fabien Potencier <fabien@symfony.com>
- *
- * @api
+ * @author Tobias Schultze <http://tobion.de>
  */
 class XmlFileLoader extends FileLoader
 {
+    const NAMESPACE_URI = 'http://symfony.com/schema/routing';
+    const SCHEME_PATH = '/schema/routing/routing-1.0.xsd';
+
     /**
      * Loads an XML file.
      *
-     * @param string $file An XML file path
-     * @param string $type The resource type
+     * @param string      $file An XML file path
+     * @param string|null $type The resource type
      *
      * @return RouteCollection A RouteCollection instance
      *
-     * @throws \InvalidArgumentException When a tag can't be parsed
-     *
-     * @api
+     * @throws \InvalidArgumentException when the file cannot be loaded or when the XML cannot be
+     *                                   parsed because it does not validate against the scheme
      */
     public function load($file, $type = null)
     {
@@ -61,106 +63,116 @@ class XmlFileLoader extends FileLoader
     /**
      * Parses a node from a loaded XML file.
      *
-     * @param RouteCollection  $collection the collection to associate with the node
-     * @param \DOMElement      $node       the node to parse
-     * @param string           $path       the path of the XML file being processed
-     * @param string           $file
+     * @param RouteCollection $collection Collection to associate with the node
+     * @param \DOMElement     $node       Element to parse
+     * @param string          $path       Full path of the XML file being processed
+     * @param string          $file       Loaded file name
+     *
+     * @throws \InvalidArgumentException When the XML is invalid
      */
     protected function parseNode(RouteCollection $collection, \DOMElement $node, $path, $file)
     {
-        switch ($node->tagName) {
+        if (self::NAMESPACE_URI !== $node->namespaceURI) {
+            return;
+        }
+
+        switch ($node->localName) {
             case 'route':
                 $this->parseRoute($collection, $node, $path);
                 break;
             case 'import':
-                $resource = (string) $node->getAttribute('resource');
-                $type = (string) $node->getAttribute('type');
-                $prefix = (string) $node->getAttribute('prefix');
-
-                $defaults = array();
-                $requirements = array();
-                $options = array();
-
-                foreach ($node->childNodes as $n) {
-                    if (!$n instanceof \DOMElement) {
-                        continue;
-                    }
-
-                    switch ($n->tagName) {
-                        case 'default':
-                            $defaults[(string) $n->getAttribute('key')] = trim((string) $n->nodeValue);
-                            break;
-                        case 'requirement':
-                            $requirements[(string) $n->getAttribute('key')] = trim((string) $n->nodeValue);
-                            break;
-                        case 'option':
-                            $options[(string) $n->getAttribute('key')] = trim((string) $n->nodeValue);
-                            break;
-                        default:
-                            throw new \InvalidArgumentException(sprintf('Unable to parse tag "%s"', $n->tagName));
-                    }
-                }
-
-                $this->setCurrentDir(dirname($path));
-                $collection->addCollection($this->import($resource, ('' !== $type ? $type : null), false, $file), $prefix, $defaults, $requirements, $options);
+                $this->parseImport($collection, $node, $path, $file);
                 break;
             default:
-                throw new \InvalidArgumentException(sprintf('Unable to parse tag "%s"', $node->tagName));
+                throw new \InvalidArgumentException(sprintf('Unknown tag "%s" used in file "%s". Expected "route" or "import".', $node->localName, $path));
         }
     }
 
     /**
      * {@inheritdoc}
-     *
-     * @api
      */
     public function supports($resource, $type = null)
     {
-        return is_string($resource) && 'xml' === pathinfo($resource, PATHINFO_EXTENSION) && (!$type || 'xml' === $type);
+        return \is_string($resource) && 'xml' === pathinfo($resource, PATHINFO_EXTENSION) && (!$type || 'xml' === $type);
     }
 
     /**
      * Parses a route and adds it to the RouteCollection.
      *
-     * @param RouteCollection $collection A RouteCollection instance
-     * @param \DOMElement     $definition Route definition
-     * @param string          $file       An XML file path
+     * @param RouteCollection $collection RouteCollection instance
+     * @param \DOMElement     $node       Element to parse that represents a Route
+     * @param string          $path       Full path of the XML file being processed
      *
-     * @throws \InvalidArgumentException When the definition cannot be parsed
+     * @throws \InvalidArgumentException When the XML is invalid
      */
-    protected function parseRoute(RouteCollection $collection, \DOMElement $definition, $file)
+    protected function parseRoute(RouteCollection $collection, \DOMElement $node, $path)
     {
-        $defaults = array();
-        $requirements = array();
-        $options = array();
-
-        foreach ($definition->childNodes as $node) {
-            if (!$node instanceof \DOMElement) {
-                continue;
-            }
-
-            switch ($node->tagName) {
-                case 'default':
-                    if ($node->hasAttribute('xsi:nil') && 'true' == $node->getAttribute('xsi:nil')) {
-                        $defaults[(string) $node->getAttribute('key')] = null;
-                    } else {
-                        $defaults[(string) $node->getAttribute('key')] = trim((string) $node->nodeValue);
-                    }
-                    break;
-                case 'option':
-                    $options[(string) $node->getAttribute('key')] = trim((string) $node->nodeValue);
-                    break;
-                case 'requirement':
-                    $requirements[(string) $node->getAttribute('key')] = trim((string) $node->nodeValue);
-                    break;
-                default:
-                    throw new \InvalidArgumentException(sprintf('Unable to parse tag "%s"', $node->tagName));
-            }
+        if ('' === ($id = $node->getAttribute('id')) || !$node->hasAttribute('path')) {
+            throw new \InvalidArgumentException(sprintf('The <route> element in file "%s" must have an "id" and a "path" attribute.', $path));
         }
 
-        $route = new Route((string) $definition->getAttribute('pattern'), $defaults, $requirements, $options);
+        $schemes = preg_split('/[\s,\|]++/', $node->getAttribute('schemes'), -1, PREG_SPLIT_NO_EMPTY);
+        $methods = preg_split('/[\s,\|]++/', $node->getAttribute('methods'), -1, PREG_SPLIT_NO_EMPTY);
 
-        $collection->add((string) $definition->getAttribute('id'), $route);
+        list($defaults, $requirements, $options, $condition) = $this->parseConfigs($node, $path);
+
+        $route = new Route($node->getAttribute('path'), $defaults, $requirements, $options, $node->getAttribute('host'), $schemes, $methods, $condition);
+        $collection->add($id, $route);
+    }
+
+    /**
+     * Parses an import and adds the routes in the resource to the RouteCollection.
+     *
+     * @param RouteCollection $collection RouteCollection instance
+     * @param \DOMElement     $node       Element to parse that represents a Route
+     * @param string          $path       Full path of the XML file being processed
+     * @param string          $file       Loaded file name
+     *
+     * @throws \InvalidArgumentException When the XML is invalid
+     */
+    protected function parseImport(RouteCollection $collection, \DOMElement $node, $path, $file)
+    {
+        if ('' === $resource = $node->getAttribute('resource')) {
+            throw new \InvalidArgumentException(sprintf('The <import> element in file "%s" must have a "resource" attribute.', $path));
+        }
+
+        $type = $node->getAttribute('type');
+        $prefix = $node->getAttribute('prefix');
+        $host = $node->hasAttribute('host') ? $node->getAttribute('host') : null;
+        $schemes = $node->hasAttribute('schemes') ? preg_split('/[\s,\|]++/', $node->getAttribute('schemes'), -1, PREG_SPLIT_NO_EMPTY) : null;
+        $methods = $node->hasAttribute('methods') ? preg_split('/[\s,\|]++/', $node->getAttribute('methods'), -1, PREG_SPLIT_NO_EMPTY) : null;
+
+        list($defaults, $requirements, $options, $condition) = $this->parseConfigs($node, $path);
+
+        $this->setCurrentDir(\dirname($path));
+
+        $imported = $this->import($resource, ('' !== $type ? $type : null), false, $file);
+
+        if (!\is_array($imported)) {
+            $imported = array($imported);
+        }
+
+        foreach ($imported as $subCollection) {
+            /* @var $subCollection RouteCollection */
+            $subCollection->addPrefix($prefix);
+            if (null !== $host) {
+                $subCollection->setHost($host);
+            }
+            if (null !== $condition) {
+                $subCollection->setCondition($condition);
+            }
+            if (null !== $schemes) {
+                $subCollection->setSchemes($schemes);
+            }
+            if (null !== $methods) {
+                $subCollection->setMethods($methods);
+            }
+            $subCollection->addDefaults($defaults);
+            $subCollection->addRequirements($requirements);
+            $subCollection->addOptions($options);
+
+            $collection->addCollection($subCollection);
+        }
     }
 
     /**
@@ -170,79 +182,178 @@ class XmlFileLoader extends FileLoader
      *
      * @return \DOMDocument
      *
-     * @throws \InvalidArgumentException When loading of XML file returns error
+     * @throws \InvalidArgumentException When loading of XML file fails because of syntax errors
+     *                                   or when the XML structure is not as expected by the scheme -
+     *                                   see validate()
      */
     protected function loadFile($file)
     {
-        $internalErrors = libxml_use_internal_errors(true);
-        $disableEntities = libxml_disable_entity_loader(true);
-        libxml_clear_errors();
+        return XmlUtils::loadFile($file, __DIR__.static::SCHEME_PATH);
+    }
 
-        $dom = new \DOMDocument();
-        $dom->validateOnParse = true;
-        if (!$dom->loadXML(file_get_contents($file), LIBXML_NONET | (defined('LIBXML_COMPACT') ? LIBXML_COMPACT : 0))) {
-            libxml_disable_entity_loader($disableEntities);
+    /**
+     * Parses the config elements (default, requirement, option).
+     *
+     * @param \DOMElement $node Element to parse that contains the configs
+     * @param string      $path Full path of the XML file being processed
+     *
+     * @return array An array with the defaults as first item, requirements as second and options as third
+     *
+     * @throws \InvalidArgumentException When the XML is invalid
+     */
+    private function parseConfigs(\DOMElement $node, $path)
+    {
+        $defaults = array();
+        $requirements = array();
+        $options = array();
+        $condition = null;
 
-            throw new \InvalidArgumentException(implode("\n", $this->getXmlErrors($internalErrors)));
-        }
-        $dom->normalizeDocument();
+        foreach ($node->getElementsByTagNameNS(self::NAMESPACE_URI, '*') as $n) {
+            if ($node !== $n->parentNode) {
+                continue;
+            }
 
-        libxml_use_internal_errors($internalErrors);
-        libxml_disable_entity_loader($disableEntities);
+            switch ($n->localName) {
+                case 'default':
+                    if ($this->isElementValueNull($n)) {
+                        $defaults[$n->getAttribute('key')] = null;
+                    } else {
+                        $defaults[$n->getAttribute('key')] = $this->parseDefaultsConfig($n, $path);
+                    }
 
-        foreach ($dom->childNodes as $child) {
-            if ($child->nodeType === XML_DOCUMENT_TYPE_NODE) {
-                throw new \InvalidArgumentException('Document types are not allowed.');
+                    break;
+                case 'requirement':
+                    $requirements[$n->getAttribute('key')] = trim($n->textContent);
+                    break;
+                case 'option':
+                    $options[$n->getAttribute('key')] = trim($n->textContent);
+                    break;
+                case 'condition':
+                    $condition = trim($n->textContent);
+                    break;
+                default:
+                    throw new \InvalidArgumentException(sprintf('Unknown tag "%s" used in file "%s". Expected "default", "requirement", "option" or "condition".', $n->localName, $path));
             }
         }
 
-        $this->validate($dom);
+        if ($controller = $node->getAttribute('controller')) {
+            if (isset($defaults['_controller'])) {
+                $name = $node->hasAttribute('id') ? sprintf('"%s"', $node->getAttribute('id')) : sprintf('the "%s" tag', $node->tagName);
 
-        return $dom;
+                throw new \InvalidArgumentException(sprintf('The routing file "%s" must not specify both the "controller" attribute and the defaults key "_controller" for %s.', $path, $name));
+            }
+
+            $defaults['_controller'] = $controller;
+        }
+
+        return array($defaults, $requirements, $options, $condition);
     }
 
     /**
-     * Validates a loaded XML file.
+     * Parses the "default" elements.
      *
-     * @param \DOMDocument $dom A loaded XML file
+     * @param \DOMElement $element The "default" element to parse
+     * @param string      $path    Full path of the XML file being processed
      *
-     * @throws \InvalidArgumentException When XML doesn't validate its XSD schema
+     * @return array|bool|float|int|string|null The parsed value of the "default" element
      */
-    protected function validate(\DOMDocument $dom)
+    private function parseDefaultsConfig(\DOMElement $element, $path)
     {
-        $location = __DIR__.'/schema/routing/routing-1.0.xsd';
-
-        $current = libxml_use_internal_errors(true);
-        libxml_clear_errors();
-
-        if (!$dom->schemaValidate($location)) {
-            throw new \InvalidArgumentException(implode("\n", $this->getXmlErrors($current)));
+        if ($this->isElementValueNull($element)) {
+            return;
         }
-        libxml_use_internal_errors($current);
+
+        // Check for existing element nodes in the default element. There can
+        // only be a single element inside a default element. So this element
+        // (if one was found) can safely be returned.
+        foreach ($element->childNodes as $child) {
+            if (!$child instanceof \DOMElement) {
+                continue;
+            }
+
+            if (self::NAMESPACE_URI !== $child->namespaceURI) {
+                continue;
+            }
+
+            return $this->parseDefaultNode($child, $path);
+        }
+
+        // If the default element doesn't contain a nested "bool", "int", "float",
+        // "string", "list", or "map" element, the element contents will be treated
+        // as the string value of the associated default option.
+        return trim($element->textContent);
     }
 
     /**
-     * Retrieves libxml errors and clears them.
+     * Recursively parses the value of a "default" element.
      *
-     * @return array An array of libxml error strings
+     * @param \DOMElement $node The node value
+     * @param string      $path Full path of the XML file being processed
+     *
+     * @return array|bool|float|int|string The parsed value
+     *
+     * @throws \InvalidArgumentException when the XML is invalid
      */
-    private function getXmlErrors($internalErrors)
+    private function parseDefaultNode(\DOMElement $node, $path)
     {
-        $errors = array();
-        foreach (libxml_get_errors() as $error) {
-            $errors[] = sprintf('[%s %s] %s (in %s - line %d, column %d)',
-                LIBXML_ERR_WARNING == $error->level ? 'WARNING' : 'ERROR',
-                $error->code,
-                trim($error->message),
-                $error->file ? $error->file : 'n/a',
-                $error->line,
-                $error->column
-            );
+        if ($this->isElementValueNull($node)) {
+            return;
         }
 
-        libxml_clear_errors();
-        libxml_use_internal_errors($internalErrors);
+        switch ($node->localName) {
+            case 'bool':
+                return 'true' === trim($node->nodeValue) || '1' === trim($node->nodeValue);
+            case 'int':
+                return (int) trim($node->nodeValue);
+            case 'float':
+                return (float) trim($node->nodeValue);
+            case 'string':
+                return trim($node->nodeValue);
+            case 'list':
+                $list = array();
 
-        return $errors;
+                foreach ($node->childNodes as $element) {
+                    if (!$element instanceof \DOMElement) {
+                        continue;
+                    }
+
+                    if (self::NAMESPACE_URI !== $element->namespaceURI) {
+                        continue;
+                    }
+
+                    $list[] = $this->parseDefaultNode($element, $path);
+                }
+
+                return $list;
+            case 'map':
+                $map = array();
+
+                foreach ($node->childNodes as $element) {
+                    if (!$element instanceof \DOMElement) {
+                        continue;
+                    }
+
+                    if (self::NAMESPACE_URI !== $element->namespaceURI) {
+                        continue;
+                    }
+
+                    $map[$element->getAttribute('key')] = $this->parseDefaultNode($element, $path);
+                }
+
+                return $map;
+            default:
+                throw new \InvalidArgumentException(sprintf('Unknown tag "%s" used in file "%s". Expected "bool", "int", "float", "string", "list", or "map".', $node->localName, $path));
+        }
+    }
+
+    private function isElementValueNull(\DOMElement $element)
+    {
+        $namespaceUri = 'http://www.w3.org/2001/XMLSchema-instance';
+
+        if (!$element->hasAttributeNS($namespaceUri, 'nil')) {
+            return false;
+        }
+
+        return 'true' === $element->getAttributeNS($namespaceUri, 'nil') || '1' === $element->getAttributeNS($namespaceUri, 'nil');
     }
 }

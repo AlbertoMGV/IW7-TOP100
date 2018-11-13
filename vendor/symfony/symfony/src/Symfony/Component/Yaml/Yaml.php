@@ -18,138 +18,133 @@ use Symfony\Component\Yaml\Exception\ParseException;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  *
- * @api
+ * @final since version 3.4
  */
 class Yaml
 {
-    /**
-     * Be warned that PHP support will be removed in Symfony 2.3.
-     *
-     * @deprecated Deprecated since version 2.0, to be removed in 2.3.
-     */
-    public static $enablePhpParsing = false;
+    const DUMP_OBJECT = 1;
+    const PARSE_EXCEPTION_ON_INVALID_TYPE = 2;
+    const PARSE_OBJECT = 4;
+    const PARSE_OBJECT_FOR_MAP = 8;
+    const DUMP_EXCEPTION_ON_INVALID_TYPE = 16;
+    const PARSE_DATETIME = 32;
+    const DUMP_OBJECT_AS_MAP = 64;
+    const DUMP_MULTI_LINE_LITERAL_BLOCK = 128;
+    const PARSE_CONSTANT = 256;
+    const PARSE_CUSTOM_TAGS = 512;
+    const DUMP_EMPTY_ARRAY_AS_SEQUENCE = 1024;
 
     /**
-     * Enables PHP support when parsing YAML files.
-     *
-     * Be warned that PHP support will be removed in Symfony 2.3.
-     *
-     * @deprecated Deprecated since version 2.0, to be removed in 2.3.
+     * @deprecated since version 3.4, to be removed in 4.0. Quote your evaluable keys instead.
      */
-    public static function enablePhpParsing()
+    const PARSE_KEYS_AS_STRINGS = 2048;
+
+    /**
+     * Parses a YAML file into a PHP value.
+     *
+     * Usage:
+     *
+     *     $array = Yaml::parseFile('config.yml');
+     *     print_r($array);
+     *
+     * @param string $filename The path to the YAML file to be parsed
+     * @param int    $flags    A bit field of PARSE_* constants to customize the YAML parser behavior
+     *
+     * @return mixed The YAML converted to a PHP value
+     *
+     * @throws ParseException If the file could not be read or the YAML is not valid
+     */
+    public static function parseFile($filename, $flags = 0)
     {
-        self::$enablePhpParsing = true;
+        $yaml = new Parser();
+
+        return $yaml->parseFile($filename, $flags);
     }
 
     /**
-     * Sets the PHP support flag when parsing YAML files.
-     *
-     * Be warned that PHP support will be removed in Symfony 2.3.
-     *
-     * @param Boolean $boolean true if PHP parsing support is enabled, false otherwise
-     *
-     * @deprecated Deprecated since version 2.0, to be removed in 2.3.
-     */
-    public static function setPhpParsing($boolean)
-    {
-        self::$enablePhpParsing = (Boolean) $boolean;
-    }
-
-    /**
-     * Checks if PHP support is enabled when parsing YAML files.
-     *
-     * Be warned that PHP support will be removed in Symfony 2.3.
-     *
-     * @return Boolean true if PHP parsing support is enabled, false otherwise
-     *
-     * @deprecated Deprecated since version 2.0, to be removed in 2.3.
-     */
-    public static function supportsPhpParsing()
-    {
-        return self::$enablePhpParsing;
-    }
-
-    /**
-     * Parses YAML into a PHP array.
-     *
-     * The parse method, when supplied with a YAML stream (string or file),
-     * will do its best to convert YAML in a file into a PHP array.
+     * Parses YAML into a PHP value.
      *
      *  Usage:
      *  <code>
-     *   $array = Yaml::parse('config.yml');
+     *   $array = Yaml::parse(file_get_contents('config.yml'));
      *   print_r($array);
      *  </code>
      *
-     * @param string $input Path to a YAML file or a string containing YAML
+     * @param string $input A string containing YAML
+     * @param int    $flags A bit field of PARSE_* constants to customize the YAML parser behavior
      *
-     * @return array The YAML converted to a PHP array
+     * @return mixed The YAML converted to a PHP value
      *
      * @throws ParseException If the YAML is not valid
-     *
-     * @api
      */
-    public static function parse($input, $exceptionOnInvalidType = false, $objectSupport = false)
+    public static function parse($input, $flags = 0)
     {
-        // if input is a file, process it
-        $file = '';
-        if (strpos($input, "\n") === false && is_file($input)) {
-            if (false === is_readable($input)) {
-                throw new ParseException(sprintf('Unable to parse "%s" as the file is not readable.', $input));
-            }
+        if (\is_bool($flags)) {
+            @trigger_error('Passing a boolean flag to toggle exception handling is deprecated since Symfony 3.1 and will be removed in 4.0. Use the PARSE_EXCEPTION_ON_INVALID_TYPE flag instead.', E_USER_DEPRECATED);
 
-            $file = $input;
-            if (self::$enablePhpParsing) {
-                ob_start();
-                $retval = include($file);
-                $content = ob_get_clean();
-
-                // if an array is returned by the config file assume it's in plain php form else in YAML
-                $input = is_array($retval) ? $retval : $content;
-
-                // if an array is returned by the config file assume it's in plain php form else in YAML
-                if (is_array($input)) {
-                    return $input;
-                }
+            if ($flags) {
+                $flags = self::PARSE_EXCEPTION_ON_INVALID_TYPE;
             } else {
-                $input = file_get_contents($file);
+                $flags = 0;
+            }
+        }
+
+        if (\func_num_args() >= 3) {
+            @trigger_error('Passing a boolean flag to toggle object support is deprecated since Symfony 3.1 and will be removed in 4.0. Use the PARSE_OBJECT flag instead.', E_USER_DEPRECATED);
+
+            if (func_get_arg(2)) {
+                $flags |= self::PARSE_OBJECT;
+            }
+        }
+
+        if (\func_num_args() >= 4) {
+            @trigger_error('Passing a boolean flag to toggle object for map support is deprecated since Symfony 3.1 and will be removed in 4.0. Use the Yaml::PARSE_OBJECT_FOR_MAP flag instead.', E_USER_DEPRECATED);
+
+            if (func_get_arg(3)) {
+                $flags |= self::PARSE_OBJECT_FOR_MAP;
             }
         }
 
         $yaml = new Parser();
 
-        try {
-            return $yaml->parse($input, $exceptionOnInvalidType, $objectSupport);
-        } catch (ParseException $e) {
-            if ($file) {
-                $e->setParsedFile($file);
-            }
-
-            throw $e;
-        }
+        return $yaml->parse($input, $flags);
     }
 
     /**
-     * Dumps a PHP array to a YAML string.
+     * Dumps a PHP value to a YAML string.
      *
      * The dump method, when supplied with an array, will do its best
      * to convert the array into friendly YAML.
      *
-     * @param array   $array                  PHP array
-     * @param integer $inline                 The level where you switch to inline YAML
-     * @param integer $indent                 The amount of spaces to use for indentation of nested nodes.
-     * @param Boolean $exceptionOnInvalidType true if an exception must be thrown on invalid types (a PHP resource or object), false otherwise
-     * @param Boolean $objectSupport          true if object support is enabled, false otherwise
+     * @param mixed $input  The PHP value
+     * @param int   $inline The level where you switch to inline YAML
+     * @param int   $indent The amount of spaces to use for indentation of nested nodes
+     * @param int   $flags  A bit field of DUMP_* constants to customize the dumped YAML string
      *
-     * @return string A YAML string representing the original PHP array
-     *
-     * @api
+     * @return string A YAML string representing the original PHP value
      */
-    public static function dump($array, $inline = 2, $indent = 4, $exceptionOnInvalidType = false, $objectSupport = false)
+    public static function dump($input, $inline = 2, $indent = 4, $flags = 0)
     {
-        $yaml = new Dumper();
-        $yaml->setIndentation($indent);
+        if (\is_bool($flags)) {
+            @trigger_error('Passing a boolean flag to toggle exception handling is deprecated since Symfony 3.1 and will be removed in 4.0. Use the DUMP_EXCEPTION_ON_INVALID_TYPE flag instead.', E_USER_DEPRECATED);
 
-        return $yaml->dump($array, $inline, 0, $exceptionOnInvalidType, $objectSupport);
+            if ($flags) {
+                $flags = self::DUMP_EXCEPTION_ON_INVALID_TYPE;
+            } else {
+                $flags = 0;
+            }
+        }
+
+        if (\func_num_args() >= 5) {
+            @trigger_error('Passing a boolean flag to toggle object support is deprecated since Symfony 3.1 and will be removed in 4.0. Use the DUMP_OBJECT flag instead.', E_USER_DEPRECATED);
+
+            if (func_get_arg(4)) {
+                $flags |= self::DUMP_OBJECT;
+            }
+        }
+
+        $yaml = new Dumper($indent);
+
+        return $yaml->dump($input, $inline, 0, $flags);
     }
 }

@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Form;
 
+use Symfony\Component\Form\Exception\TransformationFailedException;
+
 /**
  * A form group bundling multiple forms in a hierarchical structure.
  *
@@ -21,43 +23,44 @@ interface FormInterface extends \ArrayAccess, \Traversable, \Countable
     /**
      * Sets the parent form.
      *
-     * @param  FormInterface|null $parent The parent form or null if it's the root.
+     * @return self
      *
-     * @return FormInterface The form instance
-     *
-     * @throws Exception\AlreadyBoundException If the form has already been bound.
-     * @throws Exception\FormException         When trying to set a parent for a form with
-     *                                         an empty name.
+     * @throws Exception\AlreadySubmittedException if the form has already been submitted
+     * @throws Exception\LogicException            when trying to set a parent for a form with
+     *                                             an empty name
      */
     public function setParent(FormInterface $parent = null);
 
     /**
      * Returns the parent form.
      *
-     * @return FormInterface|null The parent form or null if there is none.
+     * @return self|null The parent form or null if there is none
      */
     public function getParent();
 
     /**
-     * Adds a child to the form.
+     * Adds or replaces a child to the form.
      *
-     * @param  FormInterface $child The FormInterface to add as a child
+     * @param FormInterface|string|int $child   The FormInterface instance or the name of the child
+     * @param string|null              $type    The child's type, if a name was passed
+     * @param array                    $options The child's options, if a name was passed
      *
-     * @return FormInterface The form instance
+     * @return self
      *
-     * @throws Exception\AlreadyBoundException If the form has already been bound.
-     * @throws Exception\FormException         When trying to add a child to a non-compound form.
+     * @throws Exception\AlreadySubmittedException if the form has already been submitted
+     * @throws Exception\LogicException            when trying to add a child to a non-compound form
+     * @throws Exception\UnexpectedTypeException   if $child or $type has an unexpected type
      */
-    public function add(FormInterface $child);
+    public function add($child, $type = null, array $options = array());
 
     /**
      * Returns the child with the given name.
      *
      * @param string $name The name of the child
      *
-     * @return FormInterface The child form
+     * @return self
      *
-     * @throws \OutOfBoundsException If the named child does not exist.
+     * @throws \OutOfBoundsException if the named child does not exist
      */
     public function get($name);
 
@@ -66,46 +69,51 @@ interface FormInterface extends \ArrayAccess, \Traversable, \Countable
      *
      * @param string $name The name of the child
      *
-     * @return Boolean
+     * @return bool
      */
     public function has($name);
 
     /**
      * Removes a child from the form.
      *
-     * @param  string $name The name of the child to remove
+     * @param string $name The name of the child to remove
      *
-     * @return FormInterface The form instance
+     * @return $this
      *
-     * @throws Exception\AlreadyBoundException If the form has already been bound.
+     * @throws Exception\AlreadySubmittedException if the form has already been submitted
      */
     public function remove($name);
 
     /**
      * Returns all children in this group.
      *
-     * @return array An array of FormInterface instances
+     * @return self[]
      */
     public function all();
 
     /**
-     * Returns all errors.
+     * Returns the errors of this form.
      *
-     * @return array An array of FormError instances that occurred during binding
+     * @param bool $deep    Whether to include errors of child forms as well
+     * @param bool $flatten Whether to flatten the list of errors in case
+     *                      $deep is set to true
+     *
+     * @return FormErrorIterator An iterator over the {@link FormError}
+     *                           instances that where added to this form
      */
-    public function getErrors();
+    public function getErrors($deep = false, $flatten = true);
 
     /**
      * Updates the form with default data.
      *
-     * @param  mixed $modelData The data formatted as expected for the underlying object
+     * @param mixed $modelData The data formatted as expected for the underlying object
      *
-     * @return FormInterface The form instance
+     * @return $this
      *
-     * @throws Exception\AlreadyBoundException If the form has already been bound.
-     * @throws Exception\FormException         If listeners try to call setData in a cycle. Or if
-     *                                         the view data does not match the expected type
-     *                                         according to {@link FormConfigInterface::getDataClass}.
+     * @throws Exception\AlreadySubmittedException if the form has already been submitted
+     * @throws Exception\LogicException            If listeners try to call setData in a cycle. Or if
+     *                                             the view data does not match the expected type
+     *                                             according to {@link FormConfigInterface::getDataClass}.
      */
     public function setData($modelData);
 
@@ -119,8 +127,8 @@ interface FormInterface extends \ArrayAccess, \Traversable, \Countable
     /**
      * Returns the normalized data of the field.
      *
-     * @return mixed When the field is not bound, the default data is returned.
-     *               When the field is bound, the normalized bound data is
+     * @return mixed When the field is not submitted, the default data is returned.
+     *               When the field is submitted, the normalized submitted data is
      *               returned if the field is valid, null otherwise.
      */
     public function getNormData();
@@ -135,51 +143,53 @@ interface FormInterface extends \ArrayAccess, \Traversable, \Countable
     /**
      * Returns the extra data.
      *
-     * @return array The bound data which do not belong to a child
+     * @return array The submitted data which do not belong to a child
      */
     public function getExtraData();
 
     /**
      * Returns the form's configuration.
      *
-     * @return FormConfigInterface The configuration.
+     * @return FormConfigInterface The configuration
      */
     public function getConfig();
 
     /**
-     * Returns whether the field is bound.
+     * Returns whether the form is submitted.
      *
-     * @return Boolean true if the form is bound to input values, false otherwise
+     * @return bool true if the form is submitted, false otherwise
      */
-    public function isBound();
+    public function isSubmitted();
 
     /**
      * Returns the name by which the form is identified in forms.
      *
-     * @return string The name of the form.
+     * @return string The name of the form
      */
     public function getName();
 
     /**
      * Returns the property path that the form is mapped to.
      *
-     * @return Util\PropertyPathInterface The property path.
+     * @return \Symfony\Component\PropertyAccess\PropertyPathInterface|null The property path
      */
     public function getPropertyPath();
 
     /**
      * Adds an error to this form.
      *
-     * @param  FormError $error
+     * @param FormError $error
      *
-     * @return FormInterface The form instance
+     * @return $this
      */
     public function addError(FormError $error);
 
     /**
      * Returns whether the form and all children are valid.
      *
-     * @return Boolean
+     * If the form is not submitted, this method always returns false (but will throw an exception in 4.0).
+     *
+     * @return bool
      */
     public function isValid();
 
@@ -190,7 +200,7 @@ interface FormInterface extends \ArrayAccess, \Traversable, \Countable
      * will always return false. Otherwise the value set with setRequired()
      * is returned.
      *
-     * @return Boolean
+     * @return bool
      */
     public function isRequired();
 
@@ -203,53 +213,86 @@ interface FormInterface extends \ArrayAccess, \Traversable, \Countable
      * Forms whose parents are disabled are considered disabled regardless of
      * their own state.
      *
-     * @return Boolean
+     * @return bool
      */
     public function isDisabled();
 
     /**
      * Returns whether the form is empty.
      *
-     * @return Boolean
+     * @return bool
      */
     public function isEmpty();
 
     /**
      * Returns whether the data in the different formats is synchronized.
      *
-     * @return Boolean
+     * If the data is not synchronized, you can get the transformation failure
+     * by calling {@link getTransformationFailure()}.
+     *
+     * @return bool
      */
     public function isSynchronized();
 
     /**
-     * Binds data to the form, transforms and validates it.
+     * Returns the data transformation failure, if any.
      *
-     * @param  null|string|array $submittedData The data
-     *
-     * @return FormInterface The form instance
-     *
-     * @throws Exception\AlreadyBoundException If the form has already been bound.
+     * @return TransformationFailedException|null The transformation failure
      */
-    public function bind($submittedData);
+    public function getTransformationFailure();
+
+    /**
+     * Initializes the form tree.
+     *
+     * Should be called on the root form after constructing the tree.
+     *
+     * @return $this
+     */
+    public function initialize();
+
+    /**
+     * Inspects the given request and calls {@link submit()} if the form was
+     * submitted.
+     *
+     * Internally, the request is forwarded to the configured
+     * {@link RequestHandlerInterface} instance, which determines whether to
+     * submit the form or not.
+     *
+     * @param mixed $request The request to handle
+     *
+     * @return $this
+     */
+    public function handleRequest($request = null);
+
+    /**
+     * Submits data to the form, transforms and validates it.
+     *
+     * @param mixed $submittedData The submitted data
+     * @param bool  $clearMissing  Whether to set fields to NULL when they
+     *                             are missing in the submitted data
+     *
+     * @return $this
+     *
+     * @throws Exception\AlreadySubmittedException if the form has already been submitted
+     */
+    public function submit($submittedData, $clearMissing = true);
 
     /**
      * Returns the root of the form tree.
      *
-     * @return FormInterface The root of the tree
+     * @return self The root of the tree
      */
     public function getRoot();
 
     /**
      * Returns whether the field is the root of the form tree.
      *
-     * @return Boolean
+     * @return bool
      */
     public function isRoot();
 
     /**
      * Creates a view.
-     *
-     * @param FormView $parent The parent view
      *
      * @return FormView The view
      */

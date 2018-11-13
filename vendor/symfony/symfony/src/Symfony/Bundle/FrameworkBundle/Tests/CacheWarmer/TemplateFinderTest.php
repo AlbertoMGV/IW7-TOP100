@@ -11,10 +11,10 @@
 
 namespace Symfony\Bundle\FrameworkBundle\Tests\CacheWarmer;
 
-use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
-use Symfony\Bundle\FrameworkBundle\Templating\TemplateFilenameParser;
 use Symfony\Bundle\FrameworkBundle\CacheWarmer\TemplateFinder;
+use Symfony\Bundle\FrameworkBundle\Templating\TemplateFilenameParser;
 use Symfony\Bundle\FrameworkBundle\Tests\Fixtures\BaseBundle\BaseBundle;
+use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 
 class TemplateFinderTest extends TestCase
 {
@@ -37,7 +37,7 @@ class TemplateFinderTest extends TestCase
             ->will($this->returnValue(array('BaseBundle' => new BaseBundle())))
         ;
 
-        $parser = new TemplateFilenameParser($kernel);
+        $parser = new TemplateFilenameParser();
 
         $finder = new TemplateFinder($kernel, $parser, __DIR__.'/../Fixtures/Resources');
 
@@ -46,12 +46,12 @@ class TemplateFinderTest extends TestCase
             $finder->findAllTemplates()
         );
 
-        $this->assertEquals(6, count($templates), '->findAllTemplates() find all templates in the bundles and global folders');
+        $this->assertCount(7, $templates, '->findAllTemplates() find all templates in the bundles and global folders');
         $this->assertContains('BaseBundle::base.format.engine', $templates);
         $this->assertContains('BaseBundle::this.is.a.template.format.engine', $templates);
         $this->assertContains('BaseBundle:controller:base.format.engine', $templates);
+        $this->assertContains('BaseBundle:controller:custom.format.engine', $templates);
         $this->assertContains('::this.is.a.template.format.engine', $templates);
         $this->assertContains('::resource.format.engine', $templates);
     }
-
 }

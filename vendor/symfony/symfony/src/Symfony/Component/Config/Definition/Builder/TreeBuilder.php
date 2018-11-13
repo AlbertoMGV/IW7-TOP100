@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Config\Definition\Builder;
 
+use Symfony\Component\Config\Definition\NodeInterface;
+
 /**
  * This is the entry class for building a config tree.
  *
@@ -20,6 +22,10 @@ class TreeBuilder implements NodeParentInterface
 {
     protected $tree;
     protected $root;
+
+    /**
+     * @deprecated since 3.4. To be removed in 4.0
+     */
     protected $builder;
 
     /**
@@ -44,6 +50,8 @@ class TreeBuilder implements NodeParentInterface
      * Builds the tree.
      *
      * @return NodeInterface
+     *
+     * @throws \RuntimeException
      */
     public function buildTree()
     {

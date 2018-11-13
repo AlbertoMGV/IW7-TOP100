@@ -11,18 +11,12 @@
 
 namespace Symfony\Component\Translation\Tests\Loader;
 
-use Symfony\Component\Translation\Loader\PhpFileLoader;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\Translation\Loader\PhpFileLoader;
 
-class PhpFileLoaderTest extends \PHPUnit_Framework_TestCase
+class PhpFileLoaderTest extends TestCase
 {
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Component\Config\Loader\Loader')) {
-            $this->markTestSkipped('The "Config" component is not available');
-        }
-    }
-
     public function testLoad()
     {
         $loader = new PhpFileLoader();
@@ -35,7 +29,17 @@ class PhpFileLoaderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \Symfony\Component\Translation\Exception\NotFoundResourceException
+     */
+    public function testLoadNonExistingResource()
+    {
+        $loader = new PhpFileLoader();
+        $resource = __DIR__.'/../fixtures/non-existing.php';
+        $loader->load($resource, 'en', 'domain1');
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Translation\Exception\InvalidResourceException
      */
     public function testLoadThrowsAnExceptionIfFileNotLocal()
     {

@@ -29,17 +29,27 @@ class PhpExecutableFinder
     /**
      * Finds The PHP executable.
      *
+     * @param bool $includeArgs Whether or not include command arguments
+     *
      * @return string|false The PHP executable path or false if it cannot be found
      */
-    public function find()
+    public function find($includeArgs = true)
     {
+        $args = $this->findArguments();
+        $args = $includeArgs && $args ? ' '.implode(' ', $args) : '';
+
+        // HHVM support
+        if (\defined('HHVM_VERSION')) {
+            return (getenv('PHP_BINARY') ?: PHP_BINARY).$args;
+        }
+
         // PHP_BINARY return the current sapi executable
-        if (defined('PHP_BINARY') && PHP_BINARY && ('cli' === PHP_SAPI)) {
-            return PHP_BINARY;
+        if (PHP_BINARY && \in_array(\PHP_SAPI, array('cli', 'cli-server', 'phpdbg'), true)) {
+            return PHP_BINARY.$args;
         }
 
         if ($php = getenv('PHP_PATH')) {
-            if (!is_executable($php)) {
+            if (!@is_executable($php)) {
                 return false;
             }
 
@@ -47,16 +57,38 @@ class PhpExecutableFinder
         }
 
         if ($php = getenv('PHP_PEAR_PHP_BIN')) {
-            if (is_executable($php)) {
+            if (@is_executable($php)) {
                 return $php;
             }
         }
 
+        if (@is_executable($php = PHP_BINDIR.('\\' === \DIRECTORY_SEPARATOR ? '\\php.exe' : '/php'))) {
+            return $php;
+        }
+
         $dirs = array(PHP_BINDIR);
-        if (defined('PHP_WINDOWS_VERSION_BUILD')) {
+        if ('\\' === \DIRECTORY_SEPARATOR) {
             $dirs[] = 'C:\xampp\php\\';
         }
 
         return $this->executableFinder->find('php', false, $dirs);
+    }
+
+    /**
+     * Finds the PHP executable arguments.
+     *
+     * @return array The PHP executable arguments
+     */
+    public function findArguments()
+    {
+        $arguments = array();
+
+        if (\defined('HHVM_VERSION')) {
+            $arguments[] = '--php';
+        } elseif ('phpdbg' === \PHP_SAPI) {
+            $arguments[] = '-qrr';
+        }
+
+        return $arguments;
     }
 }

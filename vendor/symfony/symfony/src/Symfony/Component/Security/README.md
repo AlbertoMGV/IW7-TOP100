@@ -1,26 +1,18 @@
 Security Component
 ==================
 
-Security provides an infrastructure for sophisticated authorization systems,
-which makes it possible to easily separate the actual authorization logic from
-so called user providers that hold the users credentials. It is inspired by
-the Java Spring framework.
+The Security component provides a complete security system for your web
+application. It ships with facilities for authenticating using HTTP basic or
+digest authentication, interactive form login or X.509 certificate login, but
+also allows you to implement your own authentication strategies. Furthermore,
+the component provides ways to authorize authenticated users based on their
+roles.
 
 Resources
 ---------
 
-Documentation:
-
-http://symfony.com/doc/2.1/book/security.html
-
-Resources
----------
-
-You can run the unit tests with the following command:
-
-    phpunit
-
-If you also want to run the unit tests that depend on other Symfony
-Components, install dev dependencies before running PHPUnit:
-
-    php composer.phar install --dev
+  * [Documentation](https://symfony.com/doc/current/components/security/index.html)
+  * [Contributing](https://symfony.com/doc/current/contributing/index.html)
+  * [Report issues](https://github.com/symfony/symfony/issues) and
+    [send Pull Requests](https://github.com/symfony/symfony/pulls)
+    in the [main Symfony repository](https://github.com/symfony/symfony)

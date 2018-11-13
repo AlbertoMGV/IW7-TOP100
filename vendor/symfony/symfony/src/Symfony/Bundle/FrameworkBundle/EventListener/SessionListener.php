@@ -12,22 +12,19 @@
 namespace Symfony\Bundle\FrameworkBundle\EventListener;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpKernel\EventListener\AbstractSessionListener;
 
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+@trigger_error(sprintf('The %s class is deprecated since Symfony 3.3 and will be removed in 4.0. Use Symfony\Component\HttpKernel\EventListener\SessionListener instead.', SessionListener::class), E_USER_DEPRECATED);
 
 /**
  * Sets the session in the request.
  *
- * @author Johannes M. Schmitt <schmittjoh@gmail.com>
+ * @author Fabien Potencier <fabien@symfony.com>
+ *
+ * @deprecated since version 3.3, to be removed in 4.0. Use Symfony\Component\HttpKernel\EventListener\SessionListener instead
  */
-class SessionListener implements EventSubscriberInterface
+class SessionListener extends AbstractSessionListener
 {
-    /**
-     * @var ContainerInterface
-     */
     private $container;
 
     public function __construct(ContainerInterface $container)
@@ -35,24 +32,12 @@ class SessionListener implements EventSubscriberInterface
         $this->container = $container;
     }
 
-    public function onKernelRequest(GetResponseEvent $event)
+    protected function getSession()
     {
-        if (HttpKernelInterface::MASTER_REQUEST !== $event->getRequestType()) {
+        if (!$this->container->has('session')) {
             return;
         }
 
-        $request = $event->getRequest();
-        if (!$this->container->has('session') || $request->hasSession()) {
-            return;
-        }
-
-        $request->setSession($this->container->get('session'));
-    }
-
-    public static function getSubscribedEvents()
-    {
-        return array(
-            KernelEvents::REQUEST => array('onKernelRequest', 128),
-        );
+        return $this->container->get('session');
     }
 }

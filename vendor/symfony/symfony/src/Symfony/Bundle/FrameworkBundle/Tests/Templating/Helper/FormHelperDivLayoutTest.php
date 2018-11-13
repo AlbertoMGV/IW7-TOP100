@@ -11,16 +11,14 @@
 
 namespace Symfony\Bundle\FrameworkBundle\Tests\Templating\Helper;
 
-use Symfony\Component\Form\FormView;
-use Symfony\Component\Form\Extension\Templating\TemplatingExtension;
-use Symfony\Component\Form\Tests\AbstractDivLayoutTest;
+use Symfony\Bundle\FrameworkBundle\Templating\Helper\TranslatorHelper;
 use Symfony\Bundle\FrameworkBundle\Tests\Templating\Helper\Fixtures\StubTemplateNameParser;
 use Symfony\Bundle\FrameworkBundle\Tests\Templating\Helper\Fixtures\StubTranslator;
-use Symfony\Component\Templating\PhpEngine;
+use Symfony\Component\Form\Extension\Templating\TemplatingExtension;
+use Symfony\Component\Form\FormView;
+use Symfony\Component\Form\Tests\AbstractDivLayoutTest;
 use Symfony\Component\Templating\Loader\FilesystemLoader;
-
-// should probably be moved to the Translation component
-use Symfony\Bundle\FrameworkBundle\Templating\Helper\TranslatorHelper;
+use Symfony\Component\Templating\PhpEngine;
 
 class FormHelperDivLayoutTest extends AbstractDivLayoutTest
 {
@@ -29,25 +27,12 @@ class FormHelperDivLayoutTest extends AbstractDivLayoutTest
      */
     protected $engine;
 
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Bundle\FrameworkBundle\Templating\Helper\TranslatorHelper')) {
-            $this->markTestSkipped('The "FrameworkBundle" is not available');
-        }
-
-        if (!class_exists('Symfony\Component\Templating\PhpEngine')) {
-            $this->markTestSkipped('The "Templating" component is not available');
-        }
-
-        parent::setUp();
-    }
-
     protected function getExtensions()
     {
         // should be moved to the Form component once absolute file paths are supported
         // by the default name parser in the Templating component
         $reflClass = new \ReflectionClass('Symfony\Bundle\FrameworkBundle\FrameworkBundle');
-        $root = realpath(dirname($reflClass->getFileName()) . '/Resources/views');
+        $root = realpath(\dirname($reflClass->getFileName()).'/Resources/views');
         $rootTheme = realpath(__DIR__.'/Resources');
         $templateNameParser = new StubTemplateNameParser($root, $rootTheme);
         $loader = new FilesystemLoader(array());
@@ -59,7 +44,7 @@ class FormHelperDivLayoutTest extends AbstractDivLayoutTest
         ));
 
         return array_merge(parent::getExtensions(), array(
-            new TemplatingExtension($this->engine, $this->csrfProvider, array(
+            new TemplatingExtension($this->engine, $this->csrfTokenManager, array(
                 'FrameworkBundle:Form',
             )),
         ));
@@ -68,11 +53,49 @@ class FormHelperDivLayoutTest extends AbstractDivLayoutTest
     protected function tearDown()
     {
         $this->engine = null;
+
+        parent::tearDown();
     }
 
-    protected function renderEnctype(FormView $view)
+    public function testStartTagHasNoActionAttributeWhenActionIsEmpty()
     {
-        return (string) $this->engine->get('form')->enctype($view);
+        $form = $this->factory->create('Symfony\Component\Form\Extension\Core\Type\FormType', null, array(
+            'method' => 'get',
+            'action' => '',
+        ));
+
+        $html = $this->renderStart($form->createView());
+
+        $this->assertSame('<form name="form" method="get">', $html);
+    }
+
+    public function testStartTagHasActionAttributeWhenActionIsZero()
+    {
+        $form = $this->factory->create('Symfony\Component\Form\Extension\Core\Type\FormType', null, array(
+            'method' => 'get',
+            'action' => '0',
+        ));
+
+        $html = $this->renderStart($form->createView());
+
+        $this->assertSame('<form name="form" method="get" action="0">', $html);
+    }
+
+    public function testMoneyWidgetInIso()
+    {
+        $this->engine->setCharset('ISO-8859-1');
+
+        $view = $this->factory
+            ->createNamed('name', 'Symfony\Component\Form\Extension\Core\Type\MoneyType')
+            ->createView()
+        ;
+
+        $this->assertSame('&euro; <input type="text" id="name" name="name" required="required" />', $this->renderWidget($view));
+    }
+
+    protected function renderForm(FormView $view, array $vars = array())
+    {
+        return (string) $this->engine->get('form')->form($view, $vars);
     }
 
     protected function renderLabel(FormView $view, $label = null, array $vars = array())
@@ -100,22 +123,32 @@ class FormHelperDivLayoutTest extends AbstractDivLayoutTest
         return (string) $this->engine->get('form')->rest($view, $vars);
     }
 
-    protected function setTheme(FormView $view, array $themes)
+    protected function renderStart(FormView $view, array $vars = array())
     {
-        $this->engine->get('form')->setTheme($view, $themes);
+        return (string) $this->engine->get('form')->start($view, $vars);
+    }
+
+    protected function renderEnd(FormView $view, array $vars = array())
+    {
+        return (string) $this->engine->get('form')->end($view, $vars);
+    }
+
+    protected function setTheme(FormView $view, array $themes, $useDefaultThemes = true)
+    {
+        $this->engine->get('form')->setTheme($view, $themes, $useDefaultThemes);
     }
 
     public static function themeBlockInheritanceProvider()
     {
         return array(
-            array(array('TestBundle:Parent'))
+            array(array('TestBundle:Parent')),
         );
     }
 
     public static function themeInheritanceProvider()
     {
         return array(
-            array(array('TestBundle:Parent'), array('TestBundle:Child'))
+            array(array('TestBundle:Parent'), array('TestBundle:Child')),
         );
     }
 }

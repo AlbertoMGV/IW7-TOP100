@@ -11,15 +11,16 @@
 
 namespace Symfony\Component\Serializer\Encoder;
 
+use Symfony\Component\Serializer\Exception\NotEncodableValueException;
+
 /**
- * Encodes JSON data
+ * Encodes JSON data.
  *
  * @author Sander Coolen <sander@jibber.nl>
  */
 class JsonEncode implements EncoderInterface
 {
-    private $options ;
-    private $lastError = JSON_ERROR_NONE;
+    private $options;
 
     public function __construct($bitmask = 0)
     {
@@ -27,28 +28,19 @@ class JsonEncode implements EncoderInterface
     }
 
     /**
-     * Returns the last encoding error (if any)
+     * Encodes PHP data to a JSON string.
      *
-     * @return integer
-     *
-     * @see http://php.net/manual/en/function.json-last-error.php json_last_error
+     * {@inheritdoc}
      */
-    public function getLastError()
+    public function encode($data, $format, array $context = array())
     {
-        return $this->lastError;
-    }
+        $context = $this->resolveContext($context);
 
-    /**
-     * Encodes PHP data to a JSON string
-     *
-     * @param mixed $data
-     *
-     * @return string
-     */
-    public function encode($data, $format)
-    {
-        $encodedJson = json_encode($data, $this->options);
-        $this->lastError = json_last_error();
+        $encodedJson = json_encode($data, $context['json_encode_options']);
+
+        if (JSON_ERROR_NONE !== json_last_error() && (false === $encodedJson || !($context['json_encode_options'] & JSON_PARTIAL_OUTPUT_ON_ERROR))) {
+            throw new NotEncodableValueException(json_last_error_msg());
+        }
 
         return $encodedJson;
     }
@@ -59,5 +51,15 @@ class JsonEncode implements EncoderInterface
     public function supportsEncoding($format)
     {
         return JsonEncoder::FORMAT === $format;
+    }
+
+    /**
+     * Merge default json encode options with context.
+     *
+     * @return array
+     */
+    private function resolveContext(array $context = array())
+    {
+        return array_merge(array('json_encode_options' => $this->options), $context);
     }
 }

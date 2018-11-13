@@ -11,7 +11,6 @@
 
 namespace Symfony\Component\Config\Definition;
 
-use Symfony\Component\Config\Definition\VariableNode;
 use Symfony\Component\Config\Definition\Exception\InvalidTypeException;
 
 /**
@@ -29,19 +28,26 @@ use Symfony\Component\Config\Definition\Exception\InvalidTypeException;
 class ScalarNode extends VariableNode
 {
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     protected function validateType($value)
     {
         if (!is_scalar($value) && null !== $value) {
-            $ex = new InvalidTypeException(sprintf(
-                'Invalid type for path "%s". Expected scalar, but got %s.',
-                $this->getPath(),
-                gettype($value)
-            ));
+            $ex = new InvalidTypeException(sprintf('Invalid type for path "%s". Expected scalar, but got %s.', $this->getPath(), \gettype($value)));
+            if ($hint = $this->getInfo()) {
+                $ex->addHint($hint);
+            }
             $ex->setPath($this->getPath());
 
             throw $ex;
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function isValueEmpty($value)
+    {
+        return null === $value || '' === $value;
     }
 }

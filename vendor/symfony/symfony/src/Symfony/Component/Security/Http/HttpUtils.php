@@ -11,15 +11,14 @@
 
 namespace Symfony\Component\Security\Http;
 
-use Symfony\Component\Security\Core\SecurityContextInterface;
-
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
-use Symfony\Component\Routing\Matcher\RequestMatcherInterface;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\Matcher\RequestMatcherInterface;
+use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
+use Symfony\Component\Security\Core\Security;
 
 /**
  * Encapsulates the logic needed to create sub-requests, redirect the user, and match URLs.
@@ -30,20 +29,23 @@ class HttpUtils
 {
     private $urlGenerator;
     private $urlMatcher;
+    private $domainRegexp;
 
     /**
-     * Constructor.
-     *
      * @param UrlGeneratorInterface                       $urlGenerator A UrlGeneratorInterface instance
-     * @param UrlMatcherInterface|RequestMatcherInterface $matcher      The Url or Request matcher
+     * @param UrlMatcherInterface|RequestMatcherInterface $urlMatcher   The URL or Request matcher
+     * @param string|null                                 $domainRegexp A regexp that the target of HTTP redirections must match, scheme included
+     *
+     * @throws \InvalidArgumentException
      */
-    public function __construct(UrlGeneratorInterface $urlGenerator = null, $urlMatcher = null)
+    public function __construct(UrlGeneratorInterface $urlGenerator = null, $urlMatcher = null, $domainRegexp = null)
     {
         $this->urlGenerator = $urlGenerator;
-        if ($urlMatcher !== null && !$urlMatcher instanceof UrlMatcherInterface && !$urlMatcher instanceof RequestMatcherInterface) {
+        if (null !== $urlMatcher && !$urlMatcher instanceof UrlMatcherInterface && !$urlMatcher instanceof RequestMatcherInterface) {
             throw new \InvalidArgumentException('Matcher must either implement UrlMatcherInterface or RequestMatcherInterface.');
         }
         $this->urlMatcher = $urlMatcher;
+        $this->domainRegexp = $domainRegexp;
     }
 
     /**
@@ -51,12 +53,16 @@ class HttpUtils
      *
      * @param Request $request A Request instance
      * @param string  $path    A path (an absolute path (/foo), an absolute URL (http://...), or a route name (foo))
-     * @param integer $status  The status code
+     * @param int     $status  The status code
      *
-     * @return Response A RedirectResponse instance
+     * @return RedirectResponse A RedirectResponse instance
      */
     public function createRedirectResponse(Request $request, $path, $status = 302)
     {
+        if (null !== $this->domainRegexp && preg_match('#^https?://[^/]++#i', $path, $host) && !preg_match(sprintf($this->domainRegexp, preg_quote($request->getHttpHost())), $host[0])) {
+            $path = '/';
+        }
+
         return new RedirectResponse($this->generateUri($request, $path), $status);
     }
 
@@ -70,19 +76,26 @@ class HttpUtils
      */
     public function createRequest(Request $request, $path)
     {
-        $newRequest = $request::create($this->generateUri($request, $path), 'get', array(), $request->cookies->all(), array(), $request->server->all());
-        if ($session = $request->getSession()) {
-            $newRequest->setSession($session);
+        $newRequest = Request::create($this->generateUri($request, $path), 'get', array(), $request->cookies->all(), array(), $request->server->all());
+        if ($request->hasSession()) {
+            $newRequest->setSession($request->getSession());
         }
 
-        if ($request->attributes->has(SecurityContextInterface::AUTHENTICATION_ERROR)) {
-            $newRequest->attributes->set(SecurityContextInterface::AUTHENTICATION_ERROR, $request->attributes->get(SecurityContextInterface::AUTHENTICATION_ERROR));
+        if ($request->attributes->has(Security::AUTHENTICATION_ERROR)) {
+            $newRequest->attributes->set(Security::AUTHENTICATION_ERROR, $request->attributes->get(Security::AUTHENTICATION_ERROR));
         }
-        if ($request->attributes->has(SecurityContextInterface::ACCESS_DENIED_ERROR)) {
-            $newRequest->attributes->set(SecurityContextInterface::ACCESS_DENIED_ERROR, $request->attributes->get(SecurityContextInterface::ACCESS_DENIED_ERROR));
+        if ($request->attributes->has(Security::ACCESS_DENIED_ERROR)) {
+            $newRequest->attributes->set(Security::ACCESS_DENIED_ERROR, $request->attributes->get(Security::ACCESS_DENIED_ERROR));
         }
-        if ($request->attributes->has(SecurityContextInterface::LAST_USERNAME)) {
-            $newRequest->attributes->set(SecurityContextInterface::LAST_USERNAME, $request->attributes->get(SecurityContextInterface::LAST_USERNAME));
+        if ($request->attributes->has(Security::LAST_USERNAME)) {
+            $newRequest->attributes->set(Security::LAST_USERNAME, $request->attributes->get(Security::LAST_USERNAME));
+        }
+
+        if ($request->get('_format')) {
+            $newRequest->attributes->set('_format', $request->get('_format'));
+        }
+        if ($request->getDefaultLocale() !== $request->getLocale()) {
+            $newRequest->setLocale($request->getLocale());
         }
 
         return $newRequest;
@@ -94,7 +107,7 @@ class HttpUtils
      * @param Request $request A Request instance
      * @param string  $path    A path (an absolute path (/foo), an absolute URL (http://...), or a route name (foo))
      *
-     * @return Boolean true if the path is the same as the one from the Request, false otherwise
+     * @return bool true if the path is the same as the one from the Request, false otherwise
      */
     public function checkRequestPath(Request $request, $path)
     {
@@ -107,7 +120,7 @@ class HttpUtils
                     $parameters = $this->urlMatcher->match($request->getPathInfo());
                 }
 
-                return $path === $parameters['_route'];
+                return isset($parameters['_route']) && $path === $parameters['_route'];
             } catch (MethodNotAllowedException $e) {
                 return false;
             } catch (ResourceNotFoundException $e) {
@@ -122,9 +135,11 @@ class HttpUtils
      * Generates a URI, based on the given path or absolute URL.
      *
      * @param Request $request A Request instance
-     * @param string $path A path (an absolute path (/foo), an absolute URL (http://...), or a route name (foo))
+     * @param string  $path    A path (an absolute path (/foo), an absolute URL (http://...), or a route name (foo))
      *
      * @return string An absolute URL
+     *
+     * @throws \LogicException
      */
     public function generateUri($request, $path)
     {
@@ -136,23 +151,23 @@ class HttpUtils
             return $request->getUriForPath($path);
         }
 
-        return $this->generateUrl($path, $request->attributes->all(), true);
-    }
-
-    private function generateUrl($route, array $attributes = array(), $absolute = false)
-    {
         if (null === $this->urlGenerator) {
             throw new \LogicException('You must provide a UrlGeneratorInterface instance to be able to use routes.');
         }
 
-        $url = $this->urlGenerator->generate($route, $attributes, $absolute);
+        $url = $this->urlGenerator->generate($path, $request->attributes->all(), UrlGeneratorInterface::ABSOLUTE_URL);
 
-        // unnecessary query string parameters must be removed from url
+        // unnecessary query string parameters must be removed from URL
         // (ie. query parameters that are presents in $attributes)
         // fortunately, they all are, so we have to remove entire query string
         $position = strpos($url, '?');
         if (false !== $position) {
+            $fragment = parse_url($url, PHP_URL_FRAGMENT);
             $url = substr($url, 0, $position);
+            // fragment must be preserved
+            if ($fragment) {
+                $url .= "#$fragment";
+            }
         }
 
         return $url;

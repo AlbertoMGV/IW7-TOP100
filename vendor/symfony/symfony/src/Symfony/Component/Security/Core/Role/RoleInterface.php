@@ -15,9 +15,11 @@ namespace Symfony\Component\Security\Core\Role;
  * RoleInterface represents a role granted to a user.
  *
  * A role must either have a string representation or it needs to be explicitly
- * supported by an at least one AccessDecisionManager.
+ * supported by at least one AccessDecisionManager.
  *
  * @author Fabien Potencier <fabien@symfony.com>
+ *
+ * @deprecated The RoleInterface is deprecated since version 3.3 and will be removed in 4.0. Extend the Symfony\Component\Security\Core\Role\Role class instead.
  */
 interface RoleInterface
 {

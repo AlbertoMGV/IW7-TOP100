@@ -29,9 +29,7 @@ interface EquatableInterface
      * Also implementation should consider that $user instance may implement
      * the extended user interface `AdvancedUserInterface`.
      *
-     * @param UserInterface $user
-     *
-     * @return Boolean
+     * @return bool
      */
     public function isEqualTo(UserInterface $user);
 }

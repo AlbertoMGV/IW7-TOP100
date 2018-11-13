@@ -11,10 +11,11 @@
 
 namespace Symfony\Component\Config\Tests\Definition;
 
-use Symfony\Component\Config\Definition\NodeInterface;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
+use Symfony\Component\Config\Definition\NodeInterface;
 
-class NormalizerTest extends \PHPUnit_Framework_TestCase
+class NormalizationTest extends TestCase
 {
     /**
      * @dataProvider getEncoderTests
@@ -29,7 +30,7 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
                     ->node('encoders', 'array')
                         ->useAttributeAsKey('class')
                         ->prototype('array')
-                            ->beforeNormalization()->ifString()->then(function($v) { return array('algorithm' => $v); })->end()
+                            ->beforeNormalization()->ifString()->then(function ($v) { return array('algorithm' => $v); })->end()
                             ->children()
                                 ->node('algorithm', 'scalar')->end()
                             ->end()
@@ -86,7 +87,7 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
             ),
         );
 
-        return array_map(function($v) {
+        return array_map(function ($v) {
             return array($v);
         }, $configs);
     }
@@ -134,7 +135,7 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
             ),
         );
 
-        return array_map(function($v) { return array($v); }, $configs);
+        return array_map(function ($v) { return array($v); }, $configs);
     }
 
     /**
@@ -165,19 +166,19 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
             ),
         );
 
-        return array_map(function($v) { return array($v); }, $configs);
+        return array_map(function ($v) { return array($v); }, $configs);
     }
 
     /**
-     * @expectedException Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
+     * @expectedException \Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
      * @expectedExceptionMessage The attribute "id" must be set for path "root.thing".
      */
     public function testNonAssociativeArrayThrowsExceptionIfAttributeNotSet()
     {
         $denormalized = array(
             'thing' => array(
-                array('foo', 'bar'), array('baz', 'qux')
-            )
+                array('foo', 'bar'), array('baz', 'qux'),
+            ),
         );
 
         $this->assertNormalized($this->getNumericKeysTestTree(), $denormalized, array());

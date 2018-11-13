@@ -11,22 +11,12 @@
 
 namespace Symfony\Component\Translation\Tests\Loader;
 
-use Symfony\Component\Translation\Loader\YamlFileLoader;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\Translation\Loader\YamlFileLoader;
 
-class YamlFileLoaderTest extends \PHPUnit_Framework_TestCase
+class YamlFileLoaderTest extends TestCase
 {
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Component\Config\Loader\Loader')) {
-            $this->markTestSkipped('The "Config" component is not available');
-        }
-
-        if (!class_exists('Symfony\Component\Yaml\Yaml')) {
-            $this->markTestSkipped('The "Yaml" component is not available');
-        }
-    }
-
     public function testLoad()
     {
         $loader = new YamlFileLoader();
@@ -50,7 +40,27 @@ class YamlFileLoaderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \Symfony\Component\Translation\Exception\NotFoundResourceException
+     */
+    public function testLoadNonExistingResource()
+    {
+        $loader = new YamlFileLoader();
+        $resource = __DIR__.'/../fixtures/non-existing.yml';
+        $loader->load($resource, 'en', 'domain1');
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Translation\Exception\InvalidResourceException
+     */
+    public function testLoadThrowsAnExceptionIfFileNotLocal()
+    {
+        $loader = new YamlFileLoader();
+        $resource = 'http://example.com/resources.yml';
+        $loader->load($resource, 'en', 'domain1');
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Translation\Exception\InvalidResourceException
      */
     public function testLoadThrowsAnExceptionIfNotAnArray()
     {

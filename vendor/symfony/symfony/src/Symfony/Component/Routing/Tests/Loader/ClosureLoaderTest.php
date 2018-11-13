@@ -11,22 +11,13 @@
 
 namespace Symfony\Component\Routing\Tests\Loader;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Routing\Loader\ClosureLoader;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
-class ClosureLoaderTest extends \PHPUnit_Framework_TestCase
+class ClosureLoaderTest extends TestCase
 {
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Component\Config\FileLocator')) {
-            $this->markTestSkipped('The "Config" component is not available');
-        }
-    }
-
-    /**
-     * @covers Symfony\Component\Routing\Loader\ClosureLoader::supports
-     */
     public function testSupports()
     {
         $loader = new ClosureLoader();
@@ -40,9 +31,6 @@ class ClosureLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($loader->supports($closure, 'foo'), '->supports() checks the resource type if specified');
     }
 
-    /**
-     * @covers Symfony\Component\Routing\Loader\ClosureLoader::load
-     */
     public function testLoad()
     {
         $loader = new ClosureLoader();

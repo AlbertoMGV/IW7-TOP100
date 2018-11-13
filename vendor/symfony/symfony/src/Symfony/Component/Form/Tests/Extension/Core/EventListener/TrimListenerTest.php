@@ -11,26 +11,20 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\EventListener;
 
-use Symfony\Component\Form\FormEvent;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\EventListener\TrimListener;
+use Symfony\Component\Form\FormEvent;
 
-class TrimListenerTest extends \PHPUnit_Framework_TestCase
+class TrimListenerTest extends TestCase
 {
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Component\EventDispatcher\EventDispatcher')) {
-            $this->markTestSkipped('The "EventDispatcher" component is not available');
-        }
-    }
-
     public function testTrim()
     {
-        $data = " Foo! ";
-        $form = $this->getMock('Symfony\Component\Form\Tests\FormInterface');
+        $data = ' Foo! ';
+        $form = $this->getMockBuilder('Symfony\Component\Form\Test\FormInterface')->getMock();
         $event = new FormEvent($form, $data);
 
         $filter = new TrimListener();
-        $filter->preBind($event);
+        $filter->preSubmit($event);
 
         $this->assertEquals('Foo!', $event->getData());
     }
@@ -38,11 +32,11 @@ class TrimListenerTest extends \PHPUnit_Framework_TestCase
     public function testTrimSkipNonStrings()
     {
         $data = 1234;
-        $form = $this->getMock('Symfony\Component\Form\Tests\FormInterface');
+        $form = $this->getMockBuilder('Symfony\Component\Form\Test\FormInterface')->getMock();
         $event = new FormEvent($form, $data);
 
         $filter = new TrimListener();
-        $filter->preBind($event);
+        $filter->preSubmit($event);
 
         $this->assertSame(1234, $event->getData());
     }

@@ -13,12 +13,14 @@ namespace Symfony\Component\Finder\Tests\Iterator;
 
 /**
  * @author Alex Bogomazov
+ *
+ * @group legacy
  */
 class FilterIteratorTest extends RealIteratorTestCase
 {
     public function testFilterFilesystemIterators()
     {
-        $i = new \FilesystemIterator(sys_get_temp_dir().'/symfony2_finder');
+        $i = new \FilesystemIterator($this->toAbsolute());
 
         // it is expected that there are test.py test.php in the tmpDir
         $i = $this->getMockForAbstractClass('Symfony\Component\Finder\Iterator\FilterIterator', array($i));
@@ -31,7 +33,7 @@ class FilterIteratorTest extends RealIteratorTestCase
 
         $c = 0;
         foreach ($i as $item) {
-            $c++;
+            ++$c;
         }
 
         $this->assertEquals(1, $c);
@@ -40,11 +42,12 @@ class FilterIteratorTest extends RealIteratorTestCase
 
         $c = 0;
         foreach ($i as $item) {
-            $c++;
+            ++$c;
         }
 
-        // This would fail with \FilterIterator but works with Symfony\Component\Finder\Iterator\FilterIterator
-        // see https://bugs.php.net/bug.php?id=49104
+        // This would fail in php older than 5.5.23/5.6.7 with \FilterIterator
+        // but works with Symfony\Component\Finder\Iterator\FilterIterator
+        // see https://bugs.php.net/68557
         $this->assertEquals(1, $c);
     }
 }

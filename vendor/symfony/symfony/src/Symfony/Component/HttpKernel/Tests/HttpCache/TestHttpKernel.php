@@ -11,21 +11,22 @@
 
 namespace Symfony\Component\HttpKernel\Tests\HttpCache;
 
-use Symfony\Component\HttpKernel\HttpKernel;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
 use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\HttpKernel\HttpKernel;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
-class TestHttpKernel extends HttpKernel implements ControllerResolverInterface
+class TestHttpKernel extends HttpKernel implements ControllerResolverInterface, ArgumentResolverInterface
 {
     protected $body;
     protected $status;
     protected $headers;
-    protected $called;
+    protected $called = false;
     protected $customizer;
-    protected $catch;
+    protected $catch = false;
     protected $backendRequest;
 
     public function __construct($body, $status, $headers, \Closure $customizer = null)
@@ -34,21 +35,29 @@ class TestHttpKernel extends HttpKernel implements ControllerResolverInterface
         $this->status = $status;
         $this->headers = $headers;
         $this->customizer = $customizer;
-        $this->called = false;
-        $this->catch = false;
 
-        parent::__construct(new EventDispatcher(), $this);
+        parent::__construct(new EventDispatcher(), $this, null, $this);
     }
 
-    public function getBackendRequest()
+    public function assert(\Closure $callback)
     {
-        return $this->backendRequest;
+        $trustedConfig = array(Request::getTrustedProxies(), Request::getTrustedHeaderSet());
+
+        list($trustedProxies, $trustedHeaderSet, $backendRequest) = $this->backendRequest;
+        Request::setTrustedProxies($trustedProxies, $trustedHeaderSet);
+
+        try {
+            $callback($backendRequest);
+        } finally {
+            list($trustedProxies, $trustedHeaderSet) = $trustedConfig;
+            Request::setTrustedProxies($trustedProxies, $trustedHeaderSet);
+        }
     }
 
     public function handle(Request $request, $type = HttpKernelInterface::MASTER_REQUEST, $catch = false)
     {
         $this->catch = $catch;
-        $this->backendRequest = $request;
+        $this->backendRequest = array(Request::getTrustedProxies(), Request::getTrustedHeaderSet(), $request);
 
         return parent::handle($request, $type, $catch);
     }
@@ -74,8 +83,8 @@ class TestHttpKernel extends HttpKernel implements ControllerResolverInterface
 
         $response = new Response($this->body, $this->status, $this->headers);
 
-        if (null !== $this->customizer) {
-            call_user_func($this->customizer, $request, $response);
+        if (null !== $customizer = $this->customizer) {
+            $customizer($request, $response);
         }
 
         return $response;

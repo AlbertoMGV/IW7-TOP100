@@ -11,12 +11,19 @@
 
 namespace Symfony\Component\HttpFoundation\Tests\Session\Storage\Handler;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\MemcacheSessionHandler;
 
-class MemcacheSessionHandlerTest extends \PHPUnit_Framework_TestCase
+/**
+ * @requires extension memcache
+ * @group time-sensitive
+ * @group legacy
+ */
+class MemcacheSessionHandlerTest extends TestCase
 {
     const PREFIX = 'prefix_';
     const TTL = 1000;
+
     /**
      * @var MemcacheSessionHandler
      */
@@ -26,11 +33,12 @@ class MemcacheSessionHandlerTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        if (!class_exists('Memcache')) {
-            $this->markTestSkipped('Skipped tests Memcache class is not present');
+        if (\defined('HHVM_VERSION')) {
+            $this->markTestSkipped('PHPUnit_MockObject cannot mock the Memcache class on HHVM. See https://github.com/sebastianbergmann/phpunit-mock-objects/pull/289');
         }
 
-        $this->memcache = $this->getMock('Memcache');
+        parent::setUp();
+        $this->memcache = $this->getMockBuilder('Memcache')->getMock();
         $this->storage = new MemcacheSessionHandler(
             $this->memcache,
             array('prefix' => self::PREFIX, 'expiretime' => self::TTL)
@@ -41,6 +49,7 @@ class MemcacheSessionHandlerTest extends \PHPUnit_Framework_TestCase
     {
         $this->memcache = null;
         $this->storage = null;
+        parent::tearDown();
     }
 
     public function testOpenSession()
@@ -50,12 +59,6 @@ class MemcacheSessionHandlerTest extends \PHPUnit_Framework_TestCase
 
     public function testCloseSession()
     {
-        $this->memcache
-            ->expects($this->once())
-            ->method('close')
-            ->will($this->returnValue(true))
-        ;
-
         $this->assertTrue($this->storage->close());
     }
 
@@ -120,5 +123,13 @@ class MemcacheSessionHandlerTest extends \PHPUnit_Framework_TestCase
             array(array('prefix' => 'session', 'expiretime' => 200), true),
             array(array('expiretime' => 100, 'foo' => 'bar'), false),
         );
+    }
+
+    public function testGetConnection()
+    {
+        $method = new \ReflectionMethod($this->storage, 'getMemcache');
+        $method->setAccessible(true);
+
+        $this->assertInstanceOf('\Memcache', $method->invoke($this->storage));
     }
 }

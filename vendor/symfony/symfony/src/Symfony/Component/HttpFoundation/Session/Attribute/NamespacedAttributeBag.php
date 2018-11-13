@@ -19,18 +19,11 @@ namespace Symfony\Component\HttpFoundation\Session\Attribute;
  */
 class NamespacedAttributeBag extends AttributeBag
 {
-    /**
-     * Namespace character.
-     *
-     * @var string
-     */
     private $namespaceCharacter;
 
     /**
-     * Constructor.
-     *
-     * @param string $storageKey         Session storage key.
-     * @param string $namespaceCharacter Namespace character to use in keys.
+     * @param string $storageKey         Session storage key
+     * @param string $namespaceCharacter Namespace character to use in keys
      */
     public function __construct($storageKey = '_sf2_attributes', $namespaceCharacter = '/')
     {
@@ -43,6 +36,7 @@ class NamespacedAttributeBag extends AttributeBag
      */
     public function has($name)
     {
+        // reference mismatch: if fixed, re-introduced in array_key_exists; keep as it is
         $attributes = $this->resolveAttributePath($name);
         $name = $this->resolveKey($name);
 
@@ -58,6 +52,7 @@ class NamespacedAttributeBag extends AttributeBag
      */
     public function get($name, $default = null)
     {
+        // reference mismatch: if fixed, re-introduced in array_key_exists; keep as it is
         $attributes = $this->resolveAttributePath($name);
         $name = $this->resolveKey($name);
 
@@ -73,7 +68,7 @@ class NamespacedAttributeBag extends AttributeBag
      */
     public function set($name, $value)
     {
-        $attributes = & $this->resolveAttributePath($name, true);
+        $attributes = &$this->resolveAttributePath($name, true);
         $name = $this->resolveKey($name);
         $attributes[$name] = $value;
     }
@@ -84,9 +79,9 @@ class NamespacedAttributeBag extends AttributeBag
     public function remove($name)
     {
         $retval = null;
-        $attributes = & $this->resolveAttributePath($name);
+        $attributes = &$this->resolveAttributePath($name);
         $name = $this->resolveKey($name);
-        if (array_key_exists($name, $attributes)) {
+        if (null !== $attributes && array_key_exists($name, $attributes)) {
             $retval = $attributes[$name];
             unset($attributes[$name]);
         }
@@ -99,15 +94,15 @@ class NamespacedAttributeBag extends AttributeBag
      *
      * This method allows structured namespacing of session attributes.
      *
-     * @param string  $name         Key name
-     * @param boolean $writeContext Write context, default false
+     * @param string $name         Key name
+     * @param bool   $writeContext Write context, default false
      *
      * @return array
      */
     protected function &resolveAttributePath($name, $writeContext = false)
     {
-        $array = & $this->attributes;
-        $name = (strpos($name, $this->namespaceCharacter) === 0) ? substr($name, 1) : $name;
+        $array = &$this->attributes;
+        $name = (0 === strpos($name, $this->namespaceCharacter)) ? substr($name, 1) : $name;
 
         // Check if there is anything to do, else return
         if (!$name) {
@@ -115,7 +110,7 @@ class NamespacedAttributeBag extends AttributeBag
         }
 
         $parts = explode($this->namespaceCharacter, $name);
-        if (count($parts) < 2) {
+        if (\count($parts) < 2) {
             if (!$writeContext) {
                 return $array;
             }
@@ -125,14 +120,20 @@ class NamespacedAttributeBag extends AttributeBag
             return $array;
         }
 
-        unset($parts[count($parts)-1]);
+        unset($parts[\count($parts) - 1]);
 
         foreach ($parts as $part) {
             if (null !== $array && !array_key_exists($part, $array)) {
-                $array[$part] = $writeContext ? array() : null;
+                if (!$writeContext) {
+                    $null = null;
+
+                    return $null;
+                }
+
+                $array[$part] = array();
             }
 
-            $array = & $array[$part];
+            $array = &$array[$part];
         }
 
         return $array;
@@ -149,8 +150,8 @@ class NamespacedAttributeBag extends AttributeBag
      */
     protected function resolveKey($name)
     {
-        if (strpos($name, $this->namespaceCharacter) !== false) {
-            $name = substr($name, strrpos($name, $this->namespaceCharacter)+1, strlen($name));
+        if (false !== $pos = strrpos($name, $this->namespaceCharacter)) {
+            $name = substr($name, $pos + 1);
         }
 
         return $name;

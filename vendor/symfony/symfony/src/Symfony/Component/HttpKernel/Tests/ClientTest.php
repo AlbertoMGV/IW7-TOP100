@@ -11,30 +11,29 @@
 
 namespace Symfony\Component\HttpKernel\Tests;
 
-use Symfony\Component\HttpKernel\Client;
-use Symfony\Component\HttpKernel\HttpKernel;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Client;
 use Symfony\Component\HttpKernel\Tests\Fixtures\TestClient;
 
-class ClientTest extends \PHPUnit_Framework_TestCase
+/**
+ * @group time-sensitive
+ */
+class ClientTest extends TestCase
 {
-    protected function setUp()
-    {
-        if (!class_exists('Symfony\Component\BrowserKit\Client')) {
-            $this->markTestSkipped('The "BrowserKit" component is not available');
-        }
-    }
-
     public function testDoRequest()
     {
         $client = new Client(new TestHttpKernel());
 
         $client->request('GET', '/');
         $this->assertEquals('Request: /', $client->getResponse()->getContent(), '->doRequest() uses the request handler to make the request');
+        $this->assertInstanceOf('Symfony\Component\BrowserKit\Request', $client->getInternalRequest());
+        $this->assertInstanceOf('Symfony\Component\HttpFoundation\Request', $client->getRequest());
+        $this->assertInstanceOf('Symfony\Component\BrowserKit\Response', $client->getInternalResponse());
+        $this->assertInstanceOf('Symfony\Component\HttpFoundation\Response', $client->getResponse());
 
         $client->request('GET', 'http://www.example.com/');
         $this->assertEquals('Request: /', $client->getResponse()->getContent(), '->doRequest() uses the request handler to make the request');
@@ -46,14 +45,6 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
     public function testGetScript()
     {
-        if (!class_exists('Symfony\Component\Process\Process')) {
-            $this->markTestSkipped('The "Process" component is not available');
-        }
-
-        if (!class_exists('Symfony\Component\ClassLoader\UniversalClassLoader')) {
-            $this->markTestSkipped('The "ClassLoader" component is not available');
-        }
-
         $client = new TestClient(new TestHttpKernel());
         $client->insulate();
         $client->request('GET', '/');
@@ -69,22 +60,17 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $m = $r->getMethod('filterResponse');
         $m->setAccessible(true);
 
-        $expected = array(
-            'foo=bar; expires=Sun, 15 Feb 2009 20:00:00 GMT; domain=http://example.com; path=/foo; secure; httponly',
-            'foo1=bar1; expires=Sun, 15 Feb 2009 20:00:00 GMT; domain=http://example.com; path=/foo; secure; httponly'
-        );
+        $response = new Response();
+        $response->headers->setCookie($cookie1 = new Cookie('foo', 'bar', \DateTime::createFromFormat('j-M-Y H:i:s T', '15-Feb-2009 20:00:00 GMT')->format('U'), '/foo', 'http://example.com', true, true));
+        $domResponse = $m->invoke($client, $response);
+        $this->assertSame((string) $cookie1, $domResponse->getHeader('Set-Cookie'));
 
         $response = new Response();
-        $response->headers->setCookie(new Cookie('foo', 'bar', \DateTime::createFromFormat('j-M-Y H:i:s T', '15-Feb-2009 20:00:00 GMT')->format('U'), '/foo', 'http://example.com', true, true));
+        $response->headers->setCookie($cookie1 = new Cookie('foo', 'bar', \DateTime::createFromFormat('j-M-Y H:i:s T', '15-Feb-2009 20:00:00 GMT')->format('U'), '/foo', 'http://example.com', true, true));
+        $response->headers->setCookie($cookie2 = new Cookie('foo1', 'bar1', \DateTime::createFromFormat('j-M-Y H:i:s T', '15-Feb-2009 20:00:00 GMT')->format('U'), '/foo', 'http://example.com', true, true));
         $domResponse = $m->invoke($client, $response);
-        $this->assertEquals($expected[0], $domResponse->getHeader('Set-Cookie'));
-
-        $response = new Response();
-        $response->headers->setCookie(new Cookie('foo', 'bar', \DateTime::createFromFormat('j-M-Y H:i:s T', '15-Feb-2009 20:00:00 GMT')->format('U'), '/foo', 'http://example.com', true, true));
-        $response->headers->setCookie(new Cookie('foo1', 'bar1', \DateTime::createFromFormat('j-M-Y H:i:s T', '15-Feb-2009 20:00:00 GMT')->format('U'), '/foo', 'http://example.com', true, true));
-        $domResponse = $m->invoke($client, $response);
-        $this->assertEquals($expected[0], $domResponse->getHeader('Set-Cookie'));
-        $this->assertEquals($expected, $domResponse->getHeader('Set-Cookie', false));
+        $this->assertSame((string) $cookie1, $domResponse->getHeader('Set-Cookie'));
+        $this->assertSame(array((string) $cookie1, (string) $cookie2), $domResponse->getHeader('Set-Cookie', false));
     }
 
     public function testFilterResponseSupportsStreamedResponses()
@@ -106,6 +92,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
     public function testUploadedFile()
     {
         $source = tempnam(sys_get_temp_dir(), 'source');
+        file_put_contents($source, '1');
         $target = sys_get_temp_dir().'/sf.moved.file';
         @unlink($target);
 
@@ -113,10 +100,11 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $client = new Client($kernel);
 
         $files = array(
-            array('tmp_name' => $source, 'name' => 'original', 'type' => 'mime/original', 'size' => 123, 'error' => UPLOAD_ERR_OK),
-            new UploadedFile($source, 'original', 'mime/original', 123, UPLOAD_ERR_OK),
+            array('tmp_name' => $source, 'name' => 'original', 'type' => 'mime/original', 'size' => 1, 'error' => UPLOAD_ERR_OK),
+            new UploadedFile($source, 'original', 'mime/original', 1, UPLOAD_ERR_OK, true),
         );
 
+        $file = null;
         foreach ($files as $file) {
             $client->request('POST', '/', array(), array('foo' => $file));
 
@@ -128,14 +116,29 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
             $this->assertEquals('original', $file->getClientOriginalName());
             $this->assertEquals('mime/original', $file->getClientMimeType());
-            $this->assertEquals('123', $file->getClientSize());
+            $this->assertSame(1, $file->getClientSize());
             $this->assertTrue($file->isValid());
         }
 
-        $file->move(dirname($target), basename($target));
+        $file->move(\dirname($target), basename($target));
 
         $this->assertFileExists($target);
         unlink($target);
+    }
+
+    public function testUploadedFileWhenNoFileSelected()
+    {
+        $kernel = new TestHttpKernel();
+        $client = new Client($kernel);
+
+        $file = array('tmp_name' => '', 'name' => '', 'type' => '', 'size' => 0, 'error' => UPLOAD_ERR_NO_FILE);
+
+        $client->request('POST', '/', array(), array('foo' => $file));
+
+        $files = $client->getRequest()->files->all();
+
+        $this->assertCount(1, $files);
+        $this->assertNull($files['foo']);
     }
 
     public function testUploadedFileWhenSizeExceedsUploadMaxFileSize()
@@ -147,7 +150,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
         $file = $this
             ->getMockBuilder('Symfony\Component\HttpFoundation\File\UploadedFile')
-            ->setConstructorArgs(array($source, 'original', 'mime/original', 123, UPLOAD_ERR_OK))
+            ->setConstructorArgs(array($source, 'original', 'mime/original', 123, UPLOAD_ERR_OK, true))
             ->setMethods(array('getSize'))
             ->getMock()
         ;

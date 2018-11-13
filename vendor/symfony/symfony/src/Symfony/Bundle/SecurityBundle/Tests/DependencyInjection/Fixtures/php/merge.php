@@ -11,10 +11,11 @@ $container->loadFromExtension('security', array(
         'main' => array(
             'form_login' => false,
             'http_basic' => null,
+            'logout_on_user_change' => true,
         ),
     ),
 
     'role_hierarchy' => array(
         'FOO' => array('MOO'),
-    )
+    ),
 ));
