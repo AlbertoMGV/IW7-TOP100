@@ -4,14 +4,16 @@
 
 	<div class="title"></div>
 	
-	<table align="center" cellpadding="10">
+	
+
+	<table align="center" cellpadding="10" style="font:16px Arial;">
 		<tr>
 			<td>
-				<div class="card">
+				<div class="card" onclick="go(songs)">
 					<img src="{{ asset('songs.jpg') }}" alt="Avatar" style="width:100%" >
 					<div class="container">
-						<h4><b>Songs</b></h4> 
-						<p>List Of Songs</p> 
+						<h2><b>Songs</b></h2> 
+						<button class="button button5" onclick="window.location='/songs';" >Explore</button>
 					</div>
 				</div>
 			</td>
@@ -19,8 +21,8 @@
 				<div class="card">
 					<img src="{{ asset('artists.jpg') }}" alt="Avatar" style="width:100%">
 					<div class="container">
-						<h4><b>Artists</b></h4> 
-						<p>List Of Artists</p> 
+						<h2><b>Artists</b></h2> 
+						<button class="button button5" onclick="window.location='/artists';" >Explore</button>
 					</div>
 				</div>
 			</td>
@@ -28,8 +30,8 @@
 				<div class="card">
 					<img src="{{ asset('genres.jpg') }}" alt="Avatar" style="width:100%">
 					<div class="container">
-						<h4><b>Genres</b></h4> 
-						<p>List Of Genres</p> 
+						<h2><b>Genres</b></h2> 
+						<button class="button button5" onclick="window.location='/genres';">Explore</button>
 					</div>
 				</div>
 			</td>			
