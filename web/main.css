@@ -4,7 +4,7 @@ body {
 
 h1 {
     color: white;
-    text-align: center;
+    text-align: left;
 }
 
 p {
@@ -26,10 +26,12 @@ p {
 
 .card {
     /* Add shadows to create the "card" effect */
+    width: 1000px;
     background-color: white;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
     transition: 0.3s;
     border-radius: 5px; /* 5px rounded corners */
+
 }
 
 /* On mouse-over, add a deeper shadow */
@@ -40,6 +42,7 @@ p {
 /* Add some padding inside the card container */
 .container {
     padding: 2px 16px;
+    text-align: left;
 }
 
 /* HEADER CSS */
@@ -286,7 +289,7 @@ p {
 
 .button {
     background-color: #4CAF50; /* Green */
-    border: none;
+    border: none; 	
     color: white;
     padding: 16px 32px;
     text-align: center;
