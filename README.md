@@ -26,7 +26,7 @@ El proyecto "Top 100" deberá implementar un sitio web en el que se muestre info
 ### Plan
 
 - En el index mostrar los generos con el top 3 canciones de dicho genero.
-- [/genre.php?id=**genreName**]: Informacion extendida de la cancion.
+- [/genre.php?id=**genreName**]: Informacion extendida del genero.
 
 - [/songs]: Top 100 canciones listadas [name/duracion/artista].
 - [/song.php?id=**songName**]: Informacion extendida de la cancion.
