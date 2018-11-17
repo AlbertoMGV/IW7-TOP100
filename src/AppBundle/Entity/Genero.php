@@ -5,6 +5,8 @@ namespace AppBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\OneToMany;
 use Doctrine\ORM\Mapping\JoinColumn;
+use Doctrine\Common\Collections\ArrayCollection;
+
 /**
  * Genero
  *
@@ -37,7 +39,6 @@ class Genero
     private $descripcion;
 
     /**
-     * One product has many features. This is the inverse side.
      * @OneToMany(targetEntity="Cancion", mappedBy="genero")
      */
 
