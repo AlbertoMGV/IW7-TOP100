@@ -1,6 +1,6 @@
-{% extends 'base.html.twig' %}
+<?php $title = 'TOP100!' ?>
 
-{% block body %}
+<?php ob_start() ?>
 
 	<div class="title"></div>
 	
@@ -13,7 +13,7 @@
 					<table>
 						<tr>
 							<td>
-								<img src="{{ asset('rock.jpg') }}" alt="Avatar" style="width:100%" >
+								<img src="rock.jpg" alt="Avatar" style="width:100%" >
 							</td>	
 							<td>	
 								<div class="container">
@@ -38,7 +38,7 @@
 					<table>
 						<tr>
 							<td>
-								<img src="{{ asset('classic.jpg') }}" alt="Avatar" style="width:100%" >
+								<img src="classic.jpg" alt="Avatar" style="width:100%" >
 							</td>	
 							<td>	
 								<div class="container">
@@ -63,7 +63,7 @@
 					<table>
 						<tr>
 							<td>
-								<img src="{{ asset('rap.jpg') }}" alt="Avatar" style="width:100%" >
+								<img src="rap.jpg" alt="Avatar" style="width:100%" >
 							</td>	
 							<td>	
 								<div class="container">
@@ -85,10 +85,5 @@
 	</table>
 
 
-{% endblock %}
-
-{% block stylesheets %}
-<style>
-
-</style>
-{% endblock %}
+<?php $content = ob_get_clean() ?>
+<?php include 'layout.html.php' ?>

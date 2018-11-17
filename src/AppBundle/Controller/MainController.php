@@ -14,7 +14,7 @@ class MainController extends Controller
     public function indexAction(Request $request)
     {
         // replace this example code with whatever you need
-        return $this->render('main/index.html.twig', [
+        return $this->render('main/index.html.php', [
             'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
         ]);
     }
@@ -24,7 +24,7 @@ class MainController extends Controller
     public function songsAction(Request $request)
     {
         // replace this example code with whatever you need
-        return $this->render('main/songs.html.twig', [
+        return $this->render('main/songs.html.php', [
             'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
         ]);
     }
@@ -34,7 +34,7 @@ class MainController extends Controller
     public function artistsAction(Request $request)
     {
         // replace this example code with whatever you need
-        return $this->render('main/artists.html.twig', [
+        return $this->render('main/artists.html.php', [
             'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
         ]);
     }
@@ -44,17 +44,16 @@ class MainController extends Controller
     public function genresAction(Request $request)
     {
         // replace this example code with whatever you need
-        return $this->render('main/genres.html.twig', [
+        return $this->render('main/genres.html.php', [
             'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
         ]);
     }
     /**
      * @Route("/test", name="test")
      */
-    public function testAction(Request $request)
+    public function testIndex()
     {
-        // replace this example code with whatever you need
-        return $this->render('main/genres.html.twig', [
+        return $this->render('main/test.html.php', [
             'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
         ]);
     }

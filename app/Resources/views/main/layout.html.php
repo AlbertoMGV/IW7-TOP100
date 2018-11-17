@@ -2,10 +2,10 @@
 <html>
     <head>
         <meta charset="UTF-8" />
-        <title>{% block title %}IW7-TOP100{% endblock %}</title>
-        {% block stylesheets %}{% endblock %}
-        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
-        <link rel="stylesheet" href="{{ asset('main.css') }}" />
+        <title><?php echo $title ?></title>
+
+        <link rel="icon" type="image/x-icon" href="favicon.ico" />
+        <link href='main.css' rel='stylesheet' type='text/css'>
         <link href='http://fonts.googleapis.com/css?family=Cookie' rel='stylesheet' type='text/css'>
         
     </head>
@@ -53,12 +53,10 @@
 
         </script>
         <!--Here goes the body <3 -->
-
-            {% block body %}{% endblock %} 
-
+        <?php echo $content ?> 
 
         <!---->
 
-        {% block javascripts %}{% endblock %}
+        
     </body>
 </html>
