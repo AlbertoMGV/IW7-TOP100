@@ -10,10 +10,10 @@ use AppBundle\Entity\Cancion;
 use AppBundle\Entity\Autor;
 
 
-class SongController extends Controller{
+class SongController {
 
     /**
-     * @Route("/songs/create", name=create_song)
+     * @Route('/songs/create', name=create_song)
      */
 
      public function createSong(){
@@ -23,6 +23,7 @@ class SongController extends Controller{
          $autor = new Autor();
          $autor->setNombre("Louis");
          $autor->setApellidos("Armstrong");
+
 
      }
 

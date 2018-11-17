@@ -40,7 +40,7 @@ class Autor
     /**
      * @var int
      *
-     * @ORM\Column(name="fecha_nacimiento", type="integer")
+     * @ORM\Column(name="fecha_nacimiento", type="date")
      */
     private $fechaNacimiento;
 
@@ -113,13 +113,6 @@ class Autor
         return $this->apellidos;
     }
 
-    /**
-     * Set fechaNacimiento.
-     *
-     * @param int $fechaNacimiento
-     *
-     * @return Autor
-     */
     public function setFechaNacimiento($fechaNacimiento)
     {
         $this->fechaNacimiento = $fechaNacimiento;
@@ -127,11 +120,6 @@ class Autor
         return $this;
     }
 
-    /**
-     * Get fechaNacimiento.
-     *
-     * @return int
-     */
     public function getFechaNacimiento()
     {
         return $this->fechaNacimiento;
