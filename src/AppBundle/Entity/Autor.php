@@ -122,6 +122,11 @@ class Autor
         return $this;
     }
 
+    /**
+     * Get FechaNacimiento.
+     *
+     * @return string
+     */
     public function getFechaNacimiento()
     {
         return $this->fechaNacimiento;

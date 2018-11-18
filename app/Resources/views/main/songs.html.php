@@ -2,20 +2,20 @@
 
 <?php ob_start() ?>
 		
+	<div class="list" style="font: 22px Arial;" >	
+		
+			<div class="card_body">
+				<h2 >List Of Songs</h2>
+				<ol class="toplist">
+					<?php 
+						echo '';
+						foreach ($songs as $song) {
+							echo '<li class="toplistitem">'.$song->getNombre().'</li>';
+						}
+					?>
+				</ol>
+			</div>	
+	</div>
 
-
-	<div class="card">
-		<div class="title">Top100 Songs</div>
-			<ol class="toplist">
-			<?php 
-
-				foreach ($songs as $song) {
-					echo '<li class="toplistitem">'.$song->getNombre().'</li>';
-				}
-			?>
-			</ol>
-		</div>
-
-<?php $content = ob_get_clean();
-?>
+<?php $content = ob_get_clean();?>
 <?php include 'layout.html.php' ?>
