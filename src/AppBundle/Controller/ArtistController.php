@@ -11,17 +11,17 @@ use AppBundle\Entity\Cancion;
 use AppBundle\Entity\Autor;
 
 
-class SongController extends Controller{
+class ArtistController extends Controller{
 
     /**
-     * @Route("/songs/{songId}")
+     * @Route("/artists/{artistId}")
      */
 
-     public function displaySongInfo($songId){
+     public function displayGenreInfo($artistId){
 
-        $song = $this->getDoctrine()->getRepository(Cancion::class)->find($songId);
+        $artist = $this->getDoctrine()->getRepository(Autor::class)->find($artistId);
 
-        return $this->render('main/song_view.html.php', ['base_dir' => 'web','song' => $song,]);
+        return $this->render('main/artist_view.html.php', ['base_dir' => 'web','artist' => $artist,]);
      }
 
 

@@ -9,7 +9,7 @@
 					<?php 
 						echo '';
 						foreach ($autores as $autor) {
-							echo '<li class="toplistitem">'.$autor->getNombre().' '.$autor->getApellidos().'</li>';
+							echo '<li class="toplistitem"><a href="/artists/'.$autor->getId().'">'.$autor->getNombre().' '.$autor->getApellidos().'</li>';
 						}
 					?>
 				</ol>

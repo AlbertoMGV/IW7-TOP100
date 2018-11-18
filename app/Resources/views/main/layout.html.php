@@ -22,6 +22,7 @@
                     <a href="/">Home</a>
                     <a href="/songs">Songs</a>
                     <a href="/artists">Artists</a>
+                    <a href="/genres">All Genres</a>
                 </nav>
 
                 <form method="get" action="#">

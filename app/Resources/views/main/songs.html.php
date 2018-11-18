@@ -10,7 +10,7 @@
 					<?php 
 						echo '';
 						foreach ($songs as $song) {
-							echo '<li class="toplistitem">'.$song->getNombre().'</li>';
+							echo '<li class="toplistitem"><a href="/songs/'.$song->getId().'">'.$song->getNombre().'</a></li>';
 						}
 					?>
 				</ol>

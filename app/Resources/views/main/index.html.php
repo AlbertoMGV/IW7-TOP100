@@ -25,13 +25,13 @@
 												<h1 style="color:black; align:left;"><b>'.ucfirst($genero->getNombre()).'</b></h1>
 												<h2>Top 3 songs</h2>
 												<ol>';
-				$top=$tops[$genero->getNombre()];
-				foreach ($top as $tx) {
-					echo '<li>'.$tx->getNombre().'</li>';
-				};	
-				echo '
+												$top=$tops[$genero->getNombre()];
+												foreach ($top as $tx) {
+													echo '<li><a href="songs/'.$tx->getId().'">'.$tx->getNombre().'</a></li>';
+												};	
+												echo '
 												</ol>
-												<button class="button button5" onclick="window.location.href="/songs";" >Explore</button>
+												<button class="button button5" onclick="window.location.href=\'/genres/'.$genero->getId().'\';" >Explore</button>
 										</div>
 									</td>
 								</tr>
