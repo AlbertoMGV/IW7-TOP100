@@ -52,6 +52,13 @@ class Cancion
      */
     private $genero;
 
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="rating", type="integer")
+     */
+    private $rating;
+
 
     /**
      * Get id.
@@ -158,4 +165,29 @@ class Cancion
     {
         return $this->genero;
     }
+
+    /**
+     * Set rating.
+     *
+     * @param int $rating
+     *
+     * @return Cancion
+     */
+    public function setRating($rating)
+    {
+        $this->rating = $rating;
+
+        return $this;
+    }
+
+    /**
+     * Get rating.
+     *
+     * @return int
+     */
+    public function getRating()
+    {
+        return $this->rating;
+    }
+
 }

@@ -5,6 +5,8 @@ namespace AppBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\OneToMany;
 use Doctrine\ORM\Mapping\JoinColumn;
+use Doctrine\Common\Collections\ArrayCollection;
+
 
 /**
  * Autor
@@ -15,9 +17,9 @@ use Doctrine\ORM\Mapping\JoinColumn;
 class Autor
 {
     /**
-     * @var int
+     * @var string
      *
-     * @ORM\Column(name="id", type="integer")
+     * @ORM\Column(name="id", type="string", length=255)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="AUTO")
      */
@@ -40,9 +42,16 @@ class Autor
     /**
      * @var int
      *
-     * @ORM\Column(name="fecha_nacimiento", type="integer")
+     * @ORM\Column(name="fecha_nacimiento", type="date")
      */
     private $fechaNacimiento;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="rating", type="integer")
+     */
+    private $rating;
 
     /**
      * One product has many features. This is the inverse side.
@@ -58,11 +67,25 @@ class Autor
     /**
      * Get id.
      *
-     * @return int
+     * @return string
      */
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * Set id.
+     *
+     * @param string $id
+     *
+     * @return Autor
+     */
+
+    public function setId($id){
+        $this->id = $id;
+
+        return $this;
     }
 
     /**
@@ -113,13 +136,6 @@ class Autor
         return $this->apellidos;
     }
 
-    /**
-     * Set fechaNacimiento.
-     *
-     * @param int $fechaNacimiento
-     *
-     * @return Autor
-     */
     public function setFechaNacimiento($fechaNacimiento)
     {
         $this->fechaNacimiento = $fechaNacimiento;
@@ -128,9 +144,9 @@ class Autor
     }
 
     /**
-     * Get fechaNacimiento.
+     * Get FechaNacimiento.
      *
-     * @return int
+     * @return string
      */
     public function getFechaNacimiento()
     {
@@ -148,4 +164,30 @@ class Autor
     }
 
 
+
+    /**
+     * Add cancione.
+     *
+     * @param \AppBundle\Entity\Cancion $cancione
+     *
+     * @return Autor
+     */
+    public function addCancione(\AppBundle\Entity\Cancion $cancione)
+    {
+        $this->canciones[] = $cancione;
+
+        return $this;
+    }
+
+    /**
+     * Remove cancione.
+     *
+     * @param \AppBundle\Entity\Cancion $cancione
+     *
+     * @return boolean TRUE if this collection contained the specified element, FALSE otherwise.
+     */
+    public function removeCancione(\AppBundle\Entity\Cancion $cancione)
+    {
+        return $this->canciones->removeElement($cancione);
+    }
 }

@@ -17,11 +17,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 class Autor
 {
     /**
-     * @var int
+     * @var string
      *
-     * @ORM\Column(name="id", type="integer")
+     * @ORM\Column(name="id", type="string", length=255)
      * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
      */
     private $id;
 
@@ -47,6 +46,13 @@ class Autor
     private $fechaNacimiento;
 
     /**
+     * @var int
+     *
+     * @ORM\Column(name="rating", type="integer")
+     */
+    private $rating;
+
+    /**
      * One product has many features. This is the inverse side.
      * @OneToMany(targetEntity="Cancion", mappedBy="autor")
      */
@@ -60,11 +66,25 @@ class Autor
     /**
      * Get id.
      *
-     * @return int
+     * @return string
      */
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * Set id.
+     *
+     * @param string $id
+     *
+     * @return Autor
+     */
+
+    public function setId($id){
+        $this->id = $id;
+
+        return $this;
     }
 
     /**
@@ -168,5 +188,29 @@ class Autor
     public function removeCancione(\AppBundle\Entity\Cancion $cancione)
     {
         return $this->canciones->removeElement($cancione);
+    }
+
+    /**
+     * Set rating.
+     *
+     * @param int $rating
+     *
+     * @return Autor
+     */
+    public function setRating($rating)
+    {
+        $this->rating = $rating;
+
+        return $this;
+    }
+
+    /**
+     * Get rating.
+     *
+     * @return int
+     */
+    public function getRating()
+    {
+        return $this->rating;
     }
 }
