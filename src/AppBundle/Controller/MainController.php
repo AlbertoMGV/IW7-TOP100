@@ -7,6 +7,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Query\ResultSetMapping;
+use Doctrine\ORM\Entity;
 
 use AppBundle\Entity\Cancion;
 use AppBundle\Entity\Genero;
@@ -21,9 +23,30 @@ class MainController extends Controller
      */
     public function indexAction(Request $request)
     {
-        // replace this example code with whatever you need
+        
+        $em = $this->getDoctrine();
+
+
+        $generos = $em->getRepository(Genero::class)->findAll();
+        $songs = $em->getRepository(Cancion::class)->findAll();
+        $test='aaaaaaaaaa';
+
+        /* pillar los tops de cada genero y meterlo a un array  */
+
+        $rsm = new ResultSetMapping();
+
+        
+        foreach ($generos as $genero) {
+            $sql= 'SELECT name FROM cancion WHERE genero_id= ? ORDER BY rating DESC LIMIT 3';
+            $query = $em->createNativeQuery($sql, $rsm);
+            $query->setParameter(2, $genero->getId());
+            $top = $query->getResult();
+
+            $tops[$genero->getNombre()] = $top;
+        }
+      
         return $this->render('main/index.html.php', [
-            'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
+            'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR, 'generos' => $generos,'songs' => $songs,'test' => $test,
         ]);
     }
     /**
