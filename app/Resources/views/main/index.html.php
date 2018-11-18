@@ -9,7 +9,7 @@
 	<table align="center" cellpadding="10" style="font:16px Arial;">
 		
 		<?php
-			$num=1;
+			
 			foreach ($generos as $genero) {
 				echo '
 				<tr>
@@ -22,8 +22,8 @@
 									</td>	
 									<td>	
 										<div class="container">
-												<h1 style="color:black; align:left;"><b> Genero '.$num.'</b></h1>
-												<h2>Top '.$genero->getNombre().' songs</h2>
+												<h1 style="color:black; align:left;"><b>'.ucfirst($genero->getNombre()).'</b></h1>
+												<h2>Top 3 songs</h2>
 												<ol>';
 				$top=$tops[$genero->getNombre()];
 				foreach ($top as $tx) {
@@ -40,7 +40,7 @@
 					</td>
 				</tr>
 				';
-				$num++;
+				
 			}
 
 		?>
