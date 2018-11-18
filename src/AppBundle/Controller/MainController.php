@@ -37,9 +37,9 @@ class MainController extends Controller
 
         
         foreach ($generos as $genero) {
-            $sql= 'SELECT name FROM cancion WHERE genero_id= ? ORDER BY rating DESC LIMIT 3';
-            $query = $em->createNativeQuery($sql, $rsm);
-            $query->setParameter(2, $genero->getId());
+            $sql= 'SELECT name FROM cancion WHERE genero_id= :x ORDER BY rating DESC LIMIT 3';
+            $query = $em->createQuery($sql);
+            $query->setParameter('x', $genero->getId());
             $top = $query->getResult();
 
             $tops[$genero->getNombre()] = $top;
