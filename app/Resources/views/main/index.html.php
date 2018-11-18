@@ -31,7 +31,7 @@
 				};	
 				echo '
 												</ol>
-												<button class="button button5" onclick="window.location=;" >Explore</button>
+												<button class="button button5" onclick="window.location.href="/songs";" >Explore</button>
 										</div>
 									</td>
 								</tr>
