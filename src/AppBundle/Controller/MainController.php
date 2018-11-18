@@ -29,24 +29,30 @@ class MainController extends Controller
 
         $generos = $em->getRepository(Genero::class)->findAll();
         $songs = $em->getRepository(Cancion::class)->findAll();
-        $test='aaaaaaaaaa';
+        $test=$em->getRepository(Cancion::class);
 
         /* pillar los tops de cada genero y meterlo a un array  */
 
-        $rsm = new ResultSetMapping();
+        
 
         
         foreach ($generos as $genero) {
             $sql= 'SELECT name FROM cancion WHERE genero_id= :x ORDER BY rating DESC LIMIT 3';
-            $query = $em->createQuery($sql);
-            $query->setParameter('x', $genero->getId());
+            $cid=$genero->getId();
+            $query = $test->createQueryBuilder('c')
+            ->where('c.genero > :cid')
+            ->setParameter('cid', $cid)
+            ->orderBy('c.rating', 'DESC')
+            ->setMaxResults(3)
+            ->getQuery();
+            
             $top = $query->getResult();
 
             $tops[$genero->getNombre()] = $top;
         }
       
         return $this->render('main/index.html.php', [
-            'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR, 'generos' => $generos,'songs' => $songs,'test' => $test,
+            'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR, 'generos' => $generos,'songs' => $songs,'tops' => $tops,
         ]);
     }
     /**

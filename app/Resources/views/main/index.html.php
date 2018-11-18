@@ -24,10 +24,13 @@
 										<div class="container">
 												<h1 style="color:black; align:left;"><b> Genero '.$num.'</b></h1>
 												<h2>Top '.$genero->getNombre().' songs</h2>
-												<ol><li>'.
-													$test
-													.'
-												</li></ol>
+												<ol>';
+				$top=$tops[$genero->getNombre()];
+				foreach ($top as $tx) {
+					echo '<li>'.$tx->getNombre().'</li>';
+				};	
+				echo '
+												</ol>
 												<button class="button button5" onclick="window.location=;" >Explore</button>
 										</div>
 									</td>
