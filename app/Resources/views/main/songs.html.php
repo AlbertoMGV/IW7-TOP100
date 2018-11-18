@@ -4,10 +4,18 @@
 		
 
 
-	<div class="card_body">
+	<div class="card">
 		<div class="title">Top100 Songs</div>
+			<ol class="toplist">
+			<?php 
 
-	</div>
+				foreach ($songs as $song) {
+					echo '<li class="toplistitem">'.$song->getNombre().'</li>';
+				}
+			?>
+			</ol>
+		</div>
 
-<?php $content = ob_get_clean() ?>
+<?php $content = ob_get_clean();
+?>
 <?php include 'layout.html.php' ?>
