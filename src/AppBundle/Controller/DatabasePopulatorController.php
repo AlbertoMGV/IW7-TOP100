@@ -38,6 +38,7 @@ class DatabasePopulatorController extends Controller{
                 $songDuration = intval($row[9]);
                 $songRating = intval(floatval($row[23])*100);
 
+
                 $genre = new Genero();
                 $genre->setNombre($genreName);
 
@@ -59,20 +60,27 @@ class DatabasePopulatorController extends Controller{
                 $song->setGenero($genre);
                 $song->setAutor($artist);
 
-                $temp = $this->getDoctrine()->getRepository(Autor::class)->find($artistId);
+                $tempArtist = $this->getDoctrine()->getRepository(Autor::class)->find($artistId);
+                $tempGenre = $this->getDoctrine()->getRepository(Genero::class)->findOneBy(array('nombre' => $genreName));
 
-                if($temp){
-                    echo 'author already exists <br>';
-                }else{
-                    if($song->getRating() > 0 && $artist->getRating() > 0){
-                        $entityManager->persist($genre);
-                        $entityManager->persist($artist);
-                        $entityManager->persist($song);
-                    }
-                    $entityManager->flush();
+                                    
+                if($tempArtist){
+                    $song->setAutor($tempArtist);
+                }if($tempGenre){
+                    $song->setGenero($tempGenre);
                 }
+                if($song->getRating() > 0 && $artist->getRating() > 0){
+                    if(!$tempArtist){
+                        $entityManager->persist($artist);
+                    }if(!$tempGenre){
+                        $entityManager->persist($genre);
+                    }
+                    $entityManager->persist($song);
+                    $songNo++;
+                }
+                $entityManager->flush();
+
             }
-            echo $songNo;
             fclose($fp);
         }
         return new Response('done');

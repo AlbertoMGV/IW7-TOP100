@@ -37,16 +37,10 @@ class MainController extends Controller
 
         
         foreach ($generos as $genero) {
-            $sql= 'SELECT name FROM cancion WHERE genero_id= :x ORDER BY rating DESC LIMIT 3';
+
             $cid=$genero->getId();
-            $query = $test->createQueryBuilder('c')
-            ->where('c.genero > :cid')
-            ->setParameter('cid', $cid)
-            ->orderBy('c.rating', 'DESC')
-            ->setMaxResults(3)
-            ->getQuery();
-            
-            $top = $query->getResult();
+
+            $top = array_slice($test->findBy(array('genero' => $cid)), 0, 3);
 
             $tops[$genero->getNombre()] = $top;
         }
