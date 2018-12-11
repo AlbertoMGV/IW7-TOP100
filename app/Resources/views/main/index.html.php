@@ -3,7 +3,7 @@
 <?php ob_start() ?>
 
 	<div class="title"></div>
-	
+	<script type="text/javascript" src="js/script.js"></script>
 				
 
 	<table align="center" cellpadding="10" style="font:16px Arial;">
