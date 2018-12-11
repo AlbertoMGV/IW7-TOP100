@@ -10,7 +10,7 @@ parameters:
 
 framework:
     #esi: ~
-    #translator: { fallbacks: ['%locale%'] }
+    translator: { fallbacks: ['es'] }
     secret: '%secret%'
     router:
         resource: '%kernel.project_dir%/app/config/routing.yml'
@@ -37,6 +37,29 @@ framework:
 twig:
     debug: '%kernel.debug%'
     strict_variables: '%kernel.debug%'
+
+# EasyAdmin Configuration
+
+easy_admin:
+    site_name: TOP 100
+    design:
+        brand_color: 'lightblue'
+    entities:
+        # change the following to the namespaces of your own entities
+        Autor:
+            class: AppBundle\Entity\Autor
+            edit:
+                fields:
+                    - 'id'
+                    - 'nombre'
+                    - 'apellidos'
+                    - 'rating'
+                    - {property: 'fechaNacimiento', type_options: {widget: 'single_text'}}
+                    - 'canciones'
+        Cancion: 
+            class: AppBundle\Entity\Cancion
+        Genero:
+            class: AppBundle\Entity\Genero
 
 # Doctrine Configuration
 doctrine:
