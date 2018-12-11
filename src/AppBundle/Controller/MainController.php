@@ -99,4 +99,10 @@ class MainController extends Controller
             'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
         ]);
     }
+
+    public function getSngs(){
+         $em = $this->getDoctrine();
+         $songs = $em->getRepository(Cancion::class)->findAll();
+         return $songs;
+    }
 }

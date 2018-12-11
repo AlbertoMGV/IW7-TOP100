@@ -145,48 +145,26 @@ li:last-child {
 
 /* The search box */
 
-.header-search .header-limiter form {
-	float:right;
-	position: relative;
-	right: 30px;
-	margin-left: 40px;
-	border-radius: 3px;
-	background-color:  #3a3c3e;
-	width: 44px;
-	height: 39px;
-	cursor: pointer;
 
-	-ms-user-select: none;
-	-moz-user-select: none;
-	-webkit-user-select: none;
-	user-select: none;
-}
 
 /* CSS search icon */
 
-.header-search .header-limiter form:before {
-	position: absolute;
-	content: '';
-	border-radius: 50%;
-	border: 2px solid #fff;
-	width: 9px;
-	height: 9px;
-	top: 12px;
-	left: 14px;
+.searchBox{
+	font:16px Arial, Helvetica, sans-serif;
 }
 
-.header-search .header-limiter form:after {
-	position: absolute;
-	content: '';
-	background-color: #fff;
-	width: 2px;
-	height: 8px;
-	top: 22px;
-	left: 26px;
-	-webkit-transform: rotate(-44deg);
-	-moz-transform: rotate(-44deg);
-	transform: rotate(-44deg);
+.searchBox input{
+
+	background-image: url('searchicon.png');
+	background-position: 10px 12px;
+ 	background-repeat: no-repeat;
+ 	font-size: 16px;
+  	padding: 12px 20px 12px 40px;
+  	border: 1px solid #ddd;
+  	margin-bottom: 12px;
 }
+
+
 
 /* The search box */
 
