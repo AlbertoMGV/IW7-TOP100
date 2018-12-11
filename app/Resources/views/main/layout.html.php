@@ -7,10 +7,19 @@
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
         <link href='main.css' rel='stylesheet' type='text/css'>
         <link href='http://fonts.googleapis.com/css?family=Cookie' rel='stylesheet' type='text/css'>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+        <script type="text/javascript" src="js/script.js"></script>
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
         
     </head>
     <body>
-        <!--Here goes the header which is going to be the same for every pagess <3 -->
+
+        <?php
+            //$xxx = $songs;            
+            $xxx = array("perro", "gato", "cebra");
+        ?>
 
         <header class="header-search">
 
@@ -25,9 +34,14 @@
                     <a href="/genres">All Genres</a>
                 </nav>
 
-                <form method="get" action="#">
-                    <input type="search" placeholder="Search!" name="search">
-                </form>
+                <div class="searchBox">
+                    
+                    <div class="ui-widget">
+                      <input id="tags">
+                    </div>
+                </div>
+
+
 
             </div>
 
@@ -36,20 +50,20 @@
         </br>
         
         <script>
+            $( function() {
+                window.alert();
+                var availableTags = [];
+                
+               <?php foreach ($xxx as $x) : ?>
 
-            $(document).ready(function() {
-
-                $('.header-search form').on('click', function(e) {
-
-                    // If the form (which is turned into the search button) was
-                    // clicked directly, toggle the visibility of the search box.
-
-                    if(e.target == this) {
-                        $(this).find('input').toggle();
-                    }
-
+                    availableTags.push("<?php echo $x?>");
+               <?php endforeach; ?>
+            
+                $( "#tags" ).autocomplete({
+                  source: availableTags
                 });
-            });
+              } );
+           
 
         </script>
         <!--Here goes the body <3 -->

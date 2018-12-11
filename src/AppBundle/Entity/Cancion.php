@@ -190,4 +190,14 @@ class Cancion
         return $this->rating;
     }
 
+    /**
+     * to String.
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return (string) $this->nombre;
+    }
+
 }
