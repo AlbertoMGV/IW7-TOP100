@@ -49,5 +49,7 @@
 
 <?php $content = ob_get_clean() ?>
 
-<?php include 'lang.html.php' ?> 
+
+
+
 <?php include 'layout.html.php' ?>

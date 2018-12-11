@@ -51,7 +51,7 @@
         
         <script>
             $( function() {
-                window.alert();
+               
                 var availableTags = [];
                 
                <?php foreach ($xxx as $x) : ?>
