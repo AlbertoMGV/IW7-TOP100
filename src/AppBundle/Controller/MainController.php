@@ -100,14 +100,12 @@ class MainController extends Controller
 
         $em = $this->getDoctrine();
 
-        $songs = $em->getRepository(Cancion::class)->createQueryBuilder('s');
-        $songs->where(
-                 $songs->expr()->like('s.nombre', ':txt')
-             )
-             ->setParameter('txt', $txt.'%')
-             ->getQuery()
-             ->getResult();
-        
+        $repo = $em->getRepository(Cancion::class);
+        $songs = $em->getRepository(Cancion::class)->createQueryBuilder('c')
+        ->where('c.nombre LIKE :txt')
+        ->setParameter('txt', $txt.'%')
+        ->getQuery()
+        ->getResult();        
 
 
         return $this->render('main/search.html.php', ['base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,'songs' => $songs, 'txt' => $txt,]);
