@@ -5,7 +5,7 @@
 	<div class="list" style="font: 22px Arial;" >	
 		
 			<div class="card_body">
-				<h2 >List of songs starting by "<?php echo $txt ?>"</h2>
+				<h2 >List of songs containing "<?php echo $txt ?>"</h2>
 				<ol class="toplist">
 					<?php 
 						echo '';
