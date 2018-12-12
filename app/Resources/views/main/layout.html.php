@@ -4,8 +4,8 @@
         <meta charset="UTF-8" />
         <title><?php echo $title ?></title>
 
-        <link rel="icon" type="image/x-icon" href="favicon.ico" />
-        <link href='main.css' rel='stylesheet' type='text/css'>
+        <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+        <link href='../main.css' rel='stylesheet' type='text/css'>
         <link href='http://fonts.googleapis.com/css?family=Cookie' rel='stylesheet' type='text/css'>
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
         <script type="text/javascript" src="js/script.js"></script>
@@ -18,7 +18,7 @@
 
         <?php
             //$xxx = $songs;            
-            $xxx = array("perro", "gato", "cebra");
+            $xxx = array("I Didn't Mean To", "Face the Ashes", "Pink World","Floating","High Tide","Caught In A Dream","Setanta matins","Twist and Shout","The Emperor Falls","Midnight Swim","Spin","Glory Be");
         ?>
 
         <header class="header-search">
@@ -34,20 +34,23 @@
                     <a href="/genres">All Genres</a>
                 </nav>
 
-                <div class="searchBox">
-                    
-                    <div class="ui-widget">
-                      <input id="tags">
-                    </div>
-                </div>
+                
+                    <div class="searchBox">
+                        <div class="ui-widget">
+                          <input name="txt" id="tags">
+                          <input type="submit" value="Buscar" onclick="search();">
+                        </div>
 
+                    </div>
+
+           
 
 
             </div>
 
         </header>
-        </br>
-        </br>
+        <br>
+        <br>
         
         <script>
             $( function() {
@@ -64,6 +67,11 @@
                 });
               } );
            
+           function search() {
+            var src = document.getElementById("tags").value;
+            window.location.replace("/search/"+src);
+                
+            }
 
         </script>
         <!--Here goes the body <3 -->
@@ -71,6 +79,12 @@
 
         <!---->
 
-        
+        <p>
+            <a href="http://jigsaw.w3.org/css-validator/check/referer">
+                <img style="border:0;width:88px;height:31px"
+                    src="http://jigsaw.w3.org/css-validator/images/vcss"
+                    alt="Valid CSS!" />
+            </a>
+        </p>
     </body>
 </html>

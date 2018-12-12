@@ -91,18 +91,41 @@ class MainController extends Controller
         ]);
     }
     /**
-     * @Route("/test", name="test")
+     * @Route("/search/{txt}")
      */
-    public function testIndex()
+    public function searchAct($txt)
     {
-        return $this->render('main/test.html.php', [
-            'base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,
-        ]);
+
+       
+
+        $em = $this->getDoctrine();
+
+        $songs = $em->getRepository(Cancion::class)->createQueryBuilder('s');
+        $songs->where(
+                 $songs->expr()->like('s.nombre', ':txt')
+             )
+             ->setParameter('txt', $txt.'%')
+             ->getQuery()
+             ->getResult();
+        
+
+
+        return $this->render('main/search.html.php', ['base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,'songs' => $songs, 'txt' => $txt,]);
+    }
+    /**
+     * @Route("/search/")
+     */
+public function searchActNull()
+    {
+
+       $em = $this->getDoctrine();
+       $txt = '';
+
+        $songs = $em->getRepository(Cancion::class)->findAll();
+
+        // replace this example code with whatever you need
+        return $this->render('main/search.html.php', ['base_dir' => realpath($this->getParameter('kernel.project_dir')).DIRECTORY_SEPARATOR,'songs' => $songs,'txt' => $txt,]);
     }
 
-    public function getSngs(){
-         $em = $this->getDoctrine();
-         $songs = $em->getRepository(Cancion::class)->findAll();
-         return $songs;
-    }
+    
 }

@@ -168,20 +168,6 @@ li:last-child {
 
 /* The search box */
 
-.header-search .header-limiter form input {
-	display: none;
-	position: absolute;
-	right: 42px;
-	padding: 11px 12px 9px;
-	border: none;
-	width: 210px;
-	border-radius: 2px 0 0 2px;
-	height: 39px;
-	box-sizing: border-box;
-	-webkit-appearance: none;
-	-moz-appearance: none;
-	appearance: none;
-}
 
 /* Making the header responsive. */
 
