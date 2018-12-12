@@ -1,7 +1,7 @@
 <?php $title = 'Song view' ?>
 
 <?php ob_start() ?>
-		
+<center>
 	<div class="card" style="font: 20px Arial;" >	
 	<tr>
 		<td>
@@ -9,7 +9,7 @@
 				<table>
 					<tr>
 						<td>
-							<img src="genres.jpg" alt="Avatar" style="width:100%" >
+							<img src=<?php echo '"genre'.rand(1,5).'.jpg"';?> alt="Avatar" width=350 height=350 >
 						</td>	
 						<td class="songinfo">	
 							<div class="container">
@@ -31,6 +31,6 @@
 		</td>
 		</tr>
 	</div>
-
+</center>
 <?php $content = ob_get_clean();?>
 <?php include 'layout.html.php' ?>

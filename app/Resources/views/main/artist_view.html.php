@@ -1,7 +1,7 @@
 <?php $title = 'Artist view' ?>
 
 <?php ob_start() ?>
-		
+	<center>
 	<div class="card" style="font: 20px Arial;" >	
 	<tr>
 		<td>
@@ -31,6 +31,6 @@
 		</td>
 		</tr>
 	</div>
-
+	</center>
 <?php $content = ob_get_clean();?>
 <?php include 'layout.html.php' ?>
