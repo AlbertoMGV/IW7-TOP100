@@ -102,8 +102,8 @@ class MainController extends Controller
 
         $repo = $em->getRepository(Cancion::class);
         $songs = $em->getRepository(Cancion::class)->createQueryBuilder('c')
-        ->where('c.nombre LIKE :txt')
-        ->setParameter('txt', $txt.'%')
+        ->where('lower(c.nombre) LIKE :txt')
+        ->setParameter('txt', '%'.$txt.'%')
         ->getQuery()
         ->getResult();        
 
