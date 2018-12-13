@@ -39,5 +39,10 @@ app.controller("agendaCtrl", function ($scope) {
         }, 500); 
     });
   };
+  $scope.getTuits = function () {
+    //Hemos intentado implementar esta funcion pero hemos tenido problemas con la libreria twit
+      var tuits = getTuitsBot($scope.usr);
+      console.log(tuits);
+  };
 
 });
