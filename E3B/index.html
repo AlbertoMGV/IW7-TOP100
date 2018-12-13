@@ -29,6 +29,11 @@
 
     <!-- AngularJS -->
     <script src="js/angular.min.js"></script>
+     <!-- FireBase -->
+    <script src='js/firebase.js'></script>
+    <!-- 
+    <script src="https://cdn.firebase.com/js/client/2.2.7/firebase.js"></script>
+    -->
 
 </head>
 
@@ -124,7 +129,7 @@
                       <p>{{ contacto.phone }}</p>
                   </div>
                   <div class="col-xs-1">
-                      <button ng-click="borrarContacto($index)" class="btn btn-danger btn-sm"><span class="glyphicon glyphicon-remove"></span></button>
+                      <button ng-click="borrarContacto($index, contacto.id)" class="btn btn-danger btn-sm"><span class="glyphicon glyphicon-remove"></span></button>
                   </div>
               </div>
             </div>
