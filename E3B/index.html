@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" ng-app="agendaJS">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -27,9 +27,12 @@
         <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
 
+    <!-- AngularJS -->
+    <script src="js/angular.min.js"></script>
+
 </head>
 
-<body id="page-top" class="index">
+<body id="page-top" class="index" ng-controller="agendaCtrl">
 
     <!-- Navigation -->
     <nav class="navbar navbar-default navbar-fixed-top">
@@ -95,7 +98,7 @@
             <div class="row">
                 <div class="form-group col-xs-12 floating-label-form-group controls">
                   <label>Buscar</label>
-                  <input type="text" class="form-control" placeholder="Buscar un contacto..." id="search">
+                  <input type="text" class="form-control" placeholder="Buscar un contacto..." id="query" ng-model="query">
                 </div>
             </div>
             <div class="row">
@@ -109,15 +112,27 @@
                     <h4>Teléfono</h4>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-xs-4">
-                    <p>John Doe</p>
-                </div>
-                <div class="col-xs-4">
-                    <p>john@doe.com</p>
-                </div>
-                <div class="col-xs-4">
-                    <p>555-555555</p>
+            <div ng-repeat="contacto in contactos | filter:query as results">
+              <div class="row">
+                  <div class="col-xs-4">
+                      <p>{{ contacto.name }}</p>
+                  </div>
+                  <div class="col-xs-4">
+                      <p>{{ contacto.email }}</p>
+                  </div>
+                  <div class="col-xs-3">
+                      <p>{{ contacto.phone }}</p>
+                  </div>
+                  <div class="col-xs-1">
+                      <button ng-click="borrarContacto($index)" class="btn btn-danger btn-sm"><span class="glyphicon glyphicon-remove"></span></button>
+                  </div>
+              </div>
+            </div>
+            <div ng-if="results.length < 1">
+                <div class="row">
+                    <div class="col-xs-12">
+                        <p>No se ha encontrado ningún contacto<span ng-show="query"> con '{{ query }}'</span>.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -134,25 +149,25 @@
             </div>
             <div class="row">
                 <div class="col-lg-8 col-lg-offset-2">
-                    <form name="sentMessage" id="contactForm" novalidate>
+                    <form name="formulario" id="formulario" ng-submit="nuevoContacto()" novalidate>
                         <div class="row control-group">
                             <div class="form-group col-xs-12 floating-label-form-group controls">
                                 <label>Nombre</label>
-                                <input type="text" class="form-control" placeholder="Nombre" id="name">
+                                <input type="text" class="form-control" placeholder="Nombre" id="name" name="name" ng-model="nuevo.name">
                                 <p class="help-block text-danger"></p>
                             </div>
                         </div>
                         <div class="row control-group">
                             <div class="form-group col-xs-12 floating-label-form-group controls">
                                 <label>Email</label>
-                                <input type="email" class="form-control" placeholder="Email" id="email">
+                                <input type="email" class="form-control" placeholder="Email" id="email" name="email" ng-model="nuevo.email">
                                 <p class="help-block text-danger"></p>
                             </div>
                         </div>
                         <div class="row control-group">
                             <div class="form-group col-xs-12 floating-label-form-group controls">
                                 <label>Teléfono</label>
-                                <input type="tel" class="form-control" placeholder="Número de teléfono" id="phone">
+                                <input type="tel" class="form-control" placeholder="Número de teléfono" name="phone" id="phone" ng-model="nuevo.phone">
                                 <p class="help-block text-danger"></p>
                             </div>
                         </div>
@@ -160,7 +175,7 @@
                         <div id="success"></div>
                         <div class="row">
                             <div class="form-group col-xs-12">
-                                <button type="submit" class="btn btn-success btn-lg">Añadir</button>
+                                <button type="submit" ng-disabled="formulario.name.$dirty && formulario.name.$invalid || formulario.email.$dirty && formulario.email.$invalid || formulario.phone.$dirty && formulario.phone.$invalid" class="btn btn-success btn-lg">Añadir</button>
                             </div>
                         </div>
                     </form>
@@ -223,6 +238,10 @@
 
     <!-- Custom Theme JavaScript -->
     <script src="js/freelancer.js"></script>
+
+    <!-- agendaJS -->
+    <script src="js/app.js"></script>
+    <script src="js/agendaCtrl.js"></script>          
 
 </body>
 
