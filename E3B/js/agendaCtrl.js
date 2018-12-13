@@ -4,7 +4,7 @@ app.controller("agendaCtrl", function ($scope) {
     $scope.query = "";
     $scope.nuevo = { name: '', email: '', phone: '' };
 
-    var ref = new Firebase('https://agendafirebase.firebaseio.com/contactos');
+    var ref = new Firebase('https://iw7-e3b.firebaseio.com/contactos');
 
 
 
@@ -32,7 +32,7 @@ app.controller("agendaCtrl", function ($scope) {
 
   $scope.borrarContacto = function (index, key) {
 
-    var contactoRef = new Firebase('https://agendafirebase.firebaseio.com/contactos/'+key);
+    var contactoRef = new Firebase('https://iw7-e3b.firebaseio.com/contactos/'+key);
     contactoRef.remove(function () { 
         $timeout(function () {
            $scope.contactos.splice(index, 1);
