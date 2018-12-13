@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="es" ng-app="agendaJS">
 <head>
+    <!--Firebase lel -->
+    <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+    <script>
+      var config = {
+        apiKey: "AIzaSyB1mkaRUjUi_2mfVZzrODxy4F64yS3NsG8",
+        authDomain: "iw7-e3b.firebaseapp.com",
+        databaseURL: "https://iw7-e3b.firebaseio.com",
+        projectId: "iw7-e3b",
+        storageBucket: "iw7-e3b.appspot.com",
+        messagingSenderId: "448884417419"
+      };
+      firebase.initializeApp(config);
+    </script>
+
+    <!-- Stuff-->
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,11 +47,10 @@
 
     <!-- AngularJS -->
     <script src="js/angular.min.js"></script>
-     <!-- FireBase -->
+     <!-- FireBase 
     <script src='js/firebase.js'></script>
-    <!-- 
-    <script src="https://cdn.firebase.com/js/client/2.2.7/firebase.js"></script>
     -->
+    
 
 </head>
 
